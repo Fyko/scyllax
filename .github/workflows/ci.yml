@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+    cancel-in-progress: true
+    group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+
+jobs:
+  check:
+    name: Lint, Format, and Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v1
+
+      - uses: r7kamura/rust-problem-matchers@v1
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run Formatter
+        run: cargo fmt --all -- --check
+
+      - name: Run Clippy
+        run: cargo clippy --all -- -D warnings
+
+      - name: Build
+        run: cargo build --release --all-features
