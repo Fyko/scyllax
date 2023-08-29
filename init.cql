@@ -7,7 +7,7 @@ use scyllax;
 
 create table person (
 	id timeuuid primary key,
-	email text
+	email text,
 	-- camel case for the sake of backwards compat
 	createdAt timestamp
 );
