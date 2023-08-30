@@ -1,8 +1,28 @@
-use crate::{EntityExt, FromRow, ScyllaxError, SelectQuery, ValueList};
+use crate::{error::ScyllaxError, EntityExt, FromRow, SelectQuery, ValueList};
 use scylla::{
     prepared_statement::PreparedStatement, query::Query, transport::errors::QueryError,
-    CachingSession,
+    CachingSession, SessionBuilder,
 };
+
+/// Creates a new [`CachingSession`] and returns it
+pub async fn create_session(
+    known_nodes: impl IntoIterator<Item = impl AsRef<str>>,
+    default_keyspace: Option<impl Into<String>>,
+) -> anyhow::Result<CachingSession> {
+    let session = CachingSession::from(
+        SessionBuilder::new()
+            .known_nodes(known_nodes)
+            .build()
+            .await?,
+        1_000,
+    );
+
+    if let Some(ks) = default_keyspace {
+        session.get_session().use_keyspace(ks, true).await?;
+    }
+
+    Ok(session)
+}
 
 /// A structure that executes queries
 pub struct Executor {

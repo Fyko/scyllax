@@ -1,31 +1,28 @@
 use anyhow::Result;
-use scylla::{prepared_statement::PreparedStatement, transport::errors::QueryError, QueryResult};
+pub use error::BuildUpsertQueryError;
+pub use scylla::{
+    prepared_statement::PreparedStatement, transport::errors::QueryError, QueryResult,
+};
 
+pub use crate::{error::ScyllaxError, executor::Executor};
 pub use async_trait::async_trait;
 pub use scylla::{frame::value::ValueList, FromRow};
 pub use scyllax_macros::*;
 
 pub mod error;
 pub mod executor;
+pub mod maybe_unset;
+pub mod prelude;
 pub mod rows;
 pub mod util;
-
-pub use {crate::error::ScyllaxError, crate::executor::Executor};
 
 /// The traits of the entity
 pub trait EntityExt<T: ValueList + FromRow> {
     /// Returns the keys of the entity as a vector of strings, keeping the order of the keys.
     fn keys() -> Vec<String>;
-}
 
-/// Every query should implement this trait to be able to execute it
-#[async_trait]
-pub trait Executable<
-    T: EntityExt<T> + ValueList + FromRow,
-    R: Clone + std::fmt::Debug + Send + Sync,
->
-{
-    async fn execute(self, db: &Executor) -> Result<R, ScyllaxError>;
+    /// Returns the primary keys
+    fn pks() -> Vec<String>;
 }
 
 /// The trait that's implemented on select/read queries
@@ -48,4 +45,16 @@ pub trait SelectQuery<
 
     /// Parses the response from the database
     async fn parse_response(res: QueryResult) -> Result<R, ScyllaxError>;
+}
+
+/// The trait that's implemented on update/insert queryes
+#[async_trait]
+pub trait UpsertQuery<T: EntityExt<T> + ValueList + FromRow> {
+    /// Returns the query as a string
+    fn query(
+        &self,
+    ) -> Result<(String, scylla::frame::value::SerializedValues), BuildUpsertQueryError>;
+
+    /// Executes the query
+    async fn execute(self, db: &Executor) -> Result<QueryResult, ScyllaxError>;
 }

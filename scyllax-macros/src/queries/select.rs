@@ -3,10 +3,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::ItemStruct;
 
-fn token_stream_with_error(mut tokens: TokenStream, error: syn::Error) -> TokenStream {
-    tokens.extend(error.into_compile_error());
-    tokens
-}
+use crate::token_stream_with_error;
 
 #[derive(FromMeta)]
 pub struct SelectQueryOptions {

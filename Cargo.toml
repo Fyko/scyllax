@@ -1,5 +1,5 @@
 [workspace]
-members = ["examples", "scyllax", "scyllax-macros"]
+members = ["example", "scyllax", "scyllax-macros"]
 resolver = "2"
 
 [workspace.dependencies]

@@ -6,4 +6,19 @@ pub enum ScyllaxError {
     SingleRowTyped(#[from] scylla::transport::query_result::SingleRowTypedError),
     #[error("No rows found")]
     NoRowsFound,
+
+    #[error("Failed to build query: {0}")]
+    BuildUpsertQueryError(#[from] BuildUpsertQueryError),
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum BuildUpsertQueryError {
+    #[error("Too many values when adding {field}")]
+    TooManyValues { field: String },
+    #[error("Can't mix named and unnamed values")]
+    MixingNamedAndNotNamedValues,
+    #[error("Value for {field} is too big")]
+    ValueTooBig { field: String },
+    #[error("Failed to serialize value for {field}")]
+    ParseError { field: String },
 }

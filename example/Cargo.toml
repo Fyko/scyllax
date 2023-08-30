@@ -1,11 +1,10 @@
 [package]
-name = "scyllax-examples"
+name = "scyllax-example"
 edition = "2021"
-version = "0.0.0"
+version = "0.1.0"
 publish = false
 
 [dependencies]
-
 anyhow = { workspace = true }
 scylla = { workspace = true }
 scyllax = { workspace = true }
@@ -13,7 +12,3 @@ tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 uuid = { workspace = true }
-
-[[example]]
-name = "simple"
-path = "simple.rs"
