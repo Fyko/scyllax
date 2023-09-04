@@ -1,13 +1,17 @@
-use scylla::ValueList;
 use scyllax::prelude::*;
 
+/// Represents a person in the database
 #[upsert_query(table = "person", name = UpsertPerson)]
 #[derive(Clone, Debug, FromRow, PartialEq, ValueList, Entity)]
 pub struct PersonEntity {
+    /// The id of the person
     #[pk]
     pub id: uuid::Uuid,
+    /// The email address of the person
     pub email: String,
+    /// The age of the person
     pub age: Option<i32>,
+    /// The date the person was created
     #[rename("createdAt")]
     pub created_at: i64,
 }

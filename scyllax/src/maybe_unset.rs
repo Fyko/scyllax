@@ -1,3 +1,4 @@
+//! A wrapper around a value that can be unincluded but not overwritten/made null
 use scylla::{
     _macro_internal::{Value, ValueTooBig},
     frame::value::Unset,
@@ -6,7 +7,9 @@ use scylla::{
 /// A wrapper around a value that can be unincluded but not overwritten/made null
 #[derive(Clone, Copy, Debug)]
 pub enum MaybeUnset<V: Value> {
+    /// The value is unset but shouldn't be overwritten
     Unset,
+    /// The value is set
     Set(V),
 }
 

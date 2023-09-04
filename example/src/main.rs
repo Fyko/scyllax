@@ -1,3 +1,4 @@
+//! Example
 use entities::person::{
     model::UpsertPerson,
     queries::{GetPersonByEmail, GetPersonById},

@@ -12,6 +12,3 @@ darling = { version = "0.20", features = ["suggestions"] }
 proc-macro2 = "1"
 quote = "1"
 syn = { version = "2", features = ["full", "derive", "extra-traits"] }
-
-[dev-dependencies]
-trybuild = "1"

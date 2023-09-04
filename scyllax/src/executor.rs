@@ -1,4 +1,6 @@
-use crate::{error::ScyllaxError, EntityExt, FromRow, SelectQuery, UpsertQuery, ValueList};
+//! The `scyllax` [`Executor`] processes queries.
+
+use crate::{error::ScyllaxError, EntityExt, FromRow, ImplValueList, SelectQuery, UpsertQuery};
 use scylla::{
     prepared_statement::PreparedStatement, query::Query, transport::errors::QueryError,
     CachingSession, QueryResult, SessionBuilder,
@@ -26,6 +28,7 @@ pub async fn create_session(
 
 /// A structure that executes queries
 pub struct Executor {
+    /// The internal [`scylla::CachingSession`]
     pub session: CachingSession,
 }
 
@@ -44,7 +47,7 @@ impl Executor {
 
     /// Executes a [`SelectQuery`] and returns the result
     pub async fn execute_select<
-        T: EntityExt<T> + FromRow + ValueList,
+        T: EntityExt<T> + FromRow + ImplValueList,
         R: Clone + std::fmt::Debug + Send + Sync,
         E: SelectQuery<T, R>,
     >(
@@ -56,7 +59,7 @@ impl Executor {
     }
 
     /// Executes a [`UpsertQuery`] and returns the result
-    pub async fn execute_upsert<T: EntityExt<T> + FromRow + ValueList, E: UpsertQuery<T>>(
+    pub async fn execute_upsert<T: EntityExt<T> + FromRow + ImplValueList, E: UpsertQuery<T>>(
         &self,
         query: E,
     ) -> Result<QueryResult, ScyllaxError> {

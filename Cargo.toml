@@ -15,6 +15,7 @@ serde_json = { version = "1", features = ["preserve_order"] }
 serde = { version = "1", features = ["derive"] }
 uuid = { version = "1", features = ["serde", "v1", "std", "fast-rng"] }
 darling = "0.20"
+trybuild = "1"
 
 [profile.release]
 debug = 1

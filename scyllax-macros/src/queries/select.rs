@@ -22,7 +22,7 @@ pub fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
         Err(e) => return e.write_errors(),
     };
 
-    let query = args.query.to_string();
+    let query = args.query.clone();
     let entity_type = args.entity_type;
 
     let input: ItemStruct = match syn::parse2(item.clone()) {

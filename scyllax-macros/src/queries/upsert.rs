@@ -70,8 +70,10 @@ pub(crate) fn upsert_impl(
         .map(|f| {
             let ident = &f.ident;
             let ty = &f.ty;
+            let comment = format!("The {} of the {}", ident.as_ref().unwrap(), struct_ident);
 
             quote! {
+                #[doc = #comment]
                 pub #ident: #ty
             }
         })
@@ -83,14 +85,21 @@ pub(crate) fn upsert_impl(
         .map(|f| {
             let ident = &f.ident;
             let ty = &f.ty;
+            let comment = format!("The {} of the {}", ident.as_ref().unwrap(), struct_ident);
 
             quote! {
+                #[doc = #comment]
                 pub #ident: scyllax::prelude::MaybeUnset<#ty>
             }
         })
         .collect::<Vec<_>>();
 
+    let docs = format!(
+        "Upserts a {} into the `{}` table",
+        struct_ident, upsert_table
+    );
     let expanded_upsert_struct = quote! {
+        #[doc = #docs]
         #[derive(Debug, Clone)]
         pub struct #upsert_struct {
             #(#expanded_pks,)*
