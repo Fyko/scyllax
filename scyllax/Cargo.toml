@@ -15,7 +15,7 @@ getrandom = "0.2"
 mac_address = "1"
 once_cell = "1"
 scylla = { workspace = true }
-scyllax-macros = { workspace = true }
+scyllax-macros = { path = "../scyllax-macros", version = "0.1.0-alpha" }
 thiserror = "1"
 tracing = { workspace = true }
 uuid = { workspace = true }
