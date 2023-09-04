@@ -1,4 +1,4 @@
-For an upsert query, there will be a little bit of database magic. For the sake of getting my ideas onto paper as quick as possible, the entity in this will be `Person`.  
+For an upsert query, there will be a little bit of database magic. For the sake of getting my ideas onto paper as quick as possible, the entity in this will be `Person`.
 
 We have the following structs:
 - `PersonEntity`, the entity itself
@@ -93,7 +93,7 @@ update person set first_name = ?, email = ?, age = ? where id = ?;
 -- variables: ("John", "john@google.com", 20, 123e4567-e89b-12d3-a456-426614174000)
 ```
 
-So, there will be one struct to be used for the query, named `UpsertPerson`.  
+So, there will be one struct to be used for the query, named `UpsertPerson`.
 We have to put the primary keys at the end of the struct, so that they can be pulled out for the `where` clause last.
 ```rust
 struct UpsertPerson {

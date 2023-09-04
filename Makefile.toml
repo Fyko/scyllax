@@ -20,6 +20,9 @@ script = '''
 
     echo # things required by `cargo make audit`
     cargo install cargo-audit
+
+    echo # things required by `cargo make sort-deps`
+    cargo install cargo-sort
 '''
 
 [tasks.example]
@@ -132,6 +135,7 @@ script = '''
 script = '''
     cargo make test
     cargo make docs
+    cargo sort --workspace
 '''
 
 [tasks.audit]

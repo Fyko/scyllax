@@ -2,10 +2,20 @@
 members = ["example", "scyllax", "scyllax-macros"]
 resolver = "2"
 
+[workspace.package]
+version = "0.1.0-alpha"
+license = "MIT OR Apache-2.0"
+edition = "2021"
+repository = "https://github.com/trufflehq/scyllax"
+keywords = ["scylla", "cassandra", "orm", "sqlx", "trufflehq", "truffle", "youtube", "twitch"]
+authors = [
+    "Carter Himmel <carter@truffle.vip>"
+]
+homepage = "https://github.com/trufflehq/scyllax#readme"
+
 [workspace.dependencies]
 scyllax = { path = "./scyllax" }
 scyllax-macros = { path = "./scyllax-macros" }
-
 anyhow = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json", "tracing-log", "parking_lot"] }
