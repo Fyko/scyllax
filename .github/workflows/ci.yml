@@ -29,11 +29,6 @@ jobs:
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: |
-            example
-            scyllax
-            scyllax-macros
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
