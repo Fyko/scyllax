@@ -1,5 +1,6 @@
+//! Macros for matching rows from a [`scylla::QueryResult`]
 #[macro_export]
-/// Take a QueryResult and return a Result<Option<T>>
+/// Take a QueryResult and return a `Result<Option<T>>`
 /// Example:
 /// ```rust,ignore
 /// match_row!(res, OrgEntity)
@@ -24,7 +25,7 @@ macro_rules! match_row {
 }
 
 #[macro_export]
-/// Take a QueryResult and return a Result<Vec<T>>
+/// Take a QueryResult and return a `Result<Vec<T>>`
 /// Example:
 /// ```rust,ignore
 /// match_rows!(res, OrgEntity)

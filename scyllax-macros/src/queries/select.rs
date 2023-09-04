@@ -3,10 +3,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::ItemStruct;
 
-fn token_stream_with_error(mut tokens: TokenStream, error: syn::Error) -> TokenStream {
-    tokens.extend(error.into_compile_error());
-    tokens
-}
+use crate::token_stream_with_error;
 
 #[derive(FromMeta)]
 pub struct SelectQueryOptions {
@@ -25,7 +22,7 @@ pub fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
         Err(e) => return e.write_errors(),
     };
 
-    let query = args.query.to_string();
+    let query = args.query.clone();
     let entity_type = args.entity_type;
 
     let input: ItemStruct = match syn::parse2(item.clone()) {
@@ -81,6 +78,9 @@ pub fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     quote! {
+        #[derive(scylla::ValueList, std::fmt::Debug, std::clone::Clone, PartialEq, Hash)]
+        #input
+
         #[scyllax::async_trait]
         impl scyllax::SelectQuery<#entity_type, #return_type> for #struct_ident {
             fn query() -> String {
@@ -94,6 +94,10 @@ pub fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
 
             async fn execute(self, db: &scyllax::Executor) -> anyhow::Result<scylla::QueryResult, scylla::transport::errors::QueryError> {
                 let query = Self::query();
+                tracing::debug!{
+                    query,
+                    "executing select"
+                };
 
                 db.session.execute(query, self).await
             }
@@ -102,8 +106,5 @@ pub fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
                 #parser
             }
         }
-
-        #[derive(scylla::ValueList, std::fmt::Debug, std::clone::Clone, PartialEq, Hash)]
-        #input
     }
 }

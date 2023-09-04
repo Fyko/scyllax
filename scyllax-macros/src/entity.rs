@@ -1,29 +1,61 @@
-use proc_macro::TokenStream;
-use quote::quote;
-use syn::{Data, DeriveInput, Expr, Field};
+use crate::token_stream_with_error;
+use proc_macro2::TokenStream;
+use quote::{quote, ToTokens};
+use syn::{Expr, Field, ItemStruct};
 
+/// Attribute expand
+/// Just adds the dervie macro to the struct.
 pub fn expand(input: TokenStream) -> TokenStream {
-    let input = syn::parse_macro_input!(input as DeriveInput);
-    let name = &input.ident;
-
-    let keys = match &input.data {
-        Data::Struct(s) => s.fields.iter().map(get_field_name).collect::<Vec<_>>(),
-        _ => panic!("Entity can only be derived for structs."),
+    let input: ItemStruct = match syn::parse2(input.clone()) {
+        Ok(it) => it,
+        Err(e) => return token_stream_with_error(input, e),
     };
 
-    let expanded = quote! {
+    let input_clone = input.clone();
+    let pks = input_clone
+        .fields
+        .iter()
+        .filter(|f| f.attrs.iter().any(|a| a.path().is_ident("pk")))
+        .collect::<Vec<_>>();
+
+    if pks.is_empty() {
+        return token_stream_with_error(
+            input.clone().into_token_stream(),
+            syn::Error::new_spanned(
+                input.clone().into_token_stream(),
+                "Entity can only be derived for structs with at least one #[pk] field.",
+            ),
+        );
+    }
+
+    entity_impl(&input, &pks)
+}
+
+/// EntityExt implementation
+fn entity_impl(input: &ItemStruct, pks: &[&Field]) -> TokenStream {
+    let name = &input.ident;
+
+    let keys = input.fields.iter().map(get_field_name).collect::<Vec<_>>();
+    let pks = pks.iter().map(|x| get_field_name(x)).collect::<Vec<_>>();
+
+    quote! {
         impl scyllax::EntityExt<#name> for #name {
             fn keys() -> Vec<String> {
                 vec![#(#keys.to_string()),*]
             }
-        }
-    };
 
-    TokenStream::from(expanded)
+            fn pks() -> Vec<String> {
+                vec![#(#pks.to_string()),*]
+            }
+        }
+    }
 }
 
-/// This is used to get the name of a field, taking into account the `#[rename]` attribute.
-fn get_field_name(field: &Field) -> String {
+/// This is used to get the name of a field, taking into account the `#[rename]` attribute.  
+///
+/// Rename is usually used to support camelCase keys, which need to be wrapped
+/// in quotes or scylla will snake_ify it.
+pub fn get_field_name(field: &Field) -> String {
     let rename = field.attrs.iter().find(|a| a.path().is_ident("rename"));
     if let Some(rename) = rename {
         let expr = rename.parse_args::<Expr>().expect("Expected an expression");

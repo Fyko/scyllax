@@ -1,14 +1,22 @@
 # scyllax
 A SQLx and Discord inspired query system for Scylla.
 
+[![discord](https://img.shields.io/discord/1080316613968011335?color=5865F2&logo=discord&logoColor=white)](https://discord.gg/FahQSBMMGg)
+[![codecov](https://codecov.io/gh/trufflehq/scyllax/graph/badge.svg?token=OGH77YR0TA)](https://codecov.io/gh/trufflehq/scyllax)
+[![CI](https://github.com/trufflehq/scyllax/actions/workflows/ci.yml/badge.svg)](https://github.com/trufflehq/scyllax/actions/workflows/ci.yml)
+
 ## Features
 - [x] Select Queries
-- [ ] Insert Queries
-- [ ] Update Queries
+- ~~[ ] Insert Queries~~
+- ~~[ ] Update Queries~~
+- [x] Upsert Queries (#1)
 - [ ] Delete Queries
 - [ ] Request Coalescing
 - [ ] Compile-time Query Validation
 - [ ] Runtime Query Validation (structure matches schema)
+
+### Todo
+- [ ] Eject `anyhow`, more refined errors
 
 ## Usage
 See [examples](examples) for more details.
@@ -18,7 +26,7 @@ See [examples](examples) for more details.
 
 ```rs
 #[read_request(
-    query = "select * from foo where id = ? limit 1", 
+    query = "select * from foo where id = ? limit 1",
     entity_type = "Foo"
 )]
 struct GetFooById {
@@ -40,7 +48,7 @@ handle.execute_read(GetFooById { ... }).await
 
 > 2) For binding of the query parameters as well, we essentially parse the SQL statement and figure out all of the bind positions, and then generate code that will bind the fields in the proper order (since on the wire level, they need to be specified in the order that they're defined in the query.) We do this at compile time in a proc macro to generate the code that does the serialization of the query, so we incur no runtime overhead of re-ordering things.
 
-> At startup we prepare everything and also type check the structs in code against what's in the db  
-Registering everything manually is fine  
-You can make it fail at compile time  
-If you try to use an unregistered query  
+> At startup we prepare everything and also type check the structs in code against what's in the db
+Registering everything manually is fine
+You can make it fail at compile time
+If you try to use an unregistered query
