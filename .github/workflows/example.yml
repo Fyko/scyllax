@@ -23,7 +23,8 @@ jobs:
           --health-cmd "[ $$(nodetool statusgossip) = running ]"
           --health-interval 5s
           --health-timeout 10s
-          --health-retries 10
+          --health-retries 20
+        # scylla takes a while to start up
 
     steps:
       - uses: actions/checkout@v3
