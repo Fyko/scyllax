@@ -5,6 +5,7 @@ services:
     image: scylladb/scylla:latest
     volumes:
       - scylla_storage:/var/lib/scylla
+      - ./init.cql:/init.cql
     command:
       - --smp 1
     ports:

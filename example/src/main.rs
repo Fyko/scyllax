@@ -18,6 +18,7 @@ async fn main() -> anyhow::Result<()> {
     let known_nodes = std::env::var("SCYLLA_NODES").unwrap_or_else(|_| String::new());
     let known_nodes = known_nodes.split(',').collect::<Vec<_>>();
     let default_keyspace = std::env::var("SCYLLA_DEFAULT_KEYSPACE").ok();
+
     let session = create_session(known_nodes, default_keyspace).await?;
     let executor = Executor::with_session(session);
 
