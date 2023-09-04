@@ -9,7 +9,7 @@ A SQLx and Discord inspired query system for Scylla.
 - [x] Select Queries
 - ~~[ ] Insert Queries~~
 - ~~[ ] Update Queries~~
-- [x] Upsert Queries (#1)
+- [x] Upsert Queries (https://github.com/trufflehq/scyllax/pull/1)
 - [ ] Delete Queries
 - [ ] Request Coalescing
 - [ ] Compile-time Query Validation
