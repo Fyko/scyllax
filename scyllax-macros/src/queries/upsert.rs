@@ -3,7 +3,7 @@ use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{Field, ItemStruct};
 
-use crate::{token_stream_with_error, entity::get_field_name};
+use crate::{entity::get_field_name, token_stream_with_error};
 
 #[derive(FromMeta)]
 pub(crate) struct UpsertQueryOptions {
@@ -54,7 +54,7 @@ pub fn expand(args: TokenStream, input: TokenStream) -> TokenStream {
 pub(crate) fn upsert_impl(
     input: &ItemStruct,
     opt: &UpsertQueryOptions,
-    pks: &Vec<&Field>,
+    pks: &[&Field],
 ) -> TokenStream {
     let upsert_struct = &opt.name;
     let upsert_table = &opt.table;
@@ -72,7 +72,7 @@ pub(crate) fn upsert_impl(
             let ty = &f.ty;
 
             quote! {
-                #ident: #ty
+                pub #ident: #ty
             }
         })
         .collect::<Vec<_>>();
@@ -85,14 +85,14 @@ pub(crate) fn upsert_impl(
             let ty = &f.ty;
 
             quote! {
-                #ident: scyllax::prelude::MaybeUnset<#ty>
+                pub #ident: scyllax::prelude::MaybeUnset<#ty>
             }
         })
         .collect::<Vec<_>>();
 
     let expanded_upsert_struct = quote! {
         #[derive(Debug, Clone)]
-        struct #upsert_struct {
+        pub struct #upsert_struct {
             #(#expanded_pks,)*
             #(#maybe_unset_fields,)*
         }
@@ -105,13 +105,13 @@ pub(crate) fn upsert_impl(
         .filter(|f| !pks.contains(f))
         .map(|f| {
             let ident = &f.ident.clone().unwrap();
-            let col = get_field_name(&f);
-            let errors = error_switchback(&f);
+            let col = get_field_name(f);
+            let errors = error_switchback(f);
 
             quote! {
                 if let scyllax::prelude::MaybeUnset::Set(#ident) = &self.#ident {
                     // FIX: ident
-                    fragments.push_str(concat!(stringify!(#col = ?), " "));
+                    fragments.push_str(concat!(stringify!(#col = ?,), " "));
 
                     match variables.add_value(#ident) {
                         Ok(_) => (),
@@ -128,12 +128,11 @@ pub(crate) fn upsert_impl(
         .filter(|f| pks.contains(f))
         .map(|f| {
             let ident = &f.ident.clone().unwrap();
-            let col = get_field_name(&f);
-            let errors = error_switchback(&f);
+            let col = get_field_name(f);
+            let errors = error_switchback(f);
 
             quote! {
-                // FIX: ident
-                fragments.push_str(concat!(stringify!(where #col = ?, ), " "));
+                fragments.push_str(concat!(stringify!(where #col = ?,), " "));
                 match variables.add_value(&self.#ident) {
                     Ok(_) => (),
                     #errors
@@ -142,9 +141,9 @@ pub(crate) fn upsert_impl(
         })
         .collect::<Vec<_>>();
 
-    // return expanded_upsert_struct;
-
     quote! {
+        #input
+
         #expanded_upsert_struct
 
         #[scyllax::async_trait]
@@ -152,13 +151,14 @@ pub(crate) fn upsert_impl(
             fn query(
                 &self,
             ) -> Result<(String, scyllax::prelude::SerializedValues), scyllax::BuildUpsertQueryError> {
-                let mut fragments = String::from(stringify!(update #upsert_table set ));
+                let mut fragments = String::from(concat!(stringify!(update #upsert_table set ), " "));
                 let mut variables = scylla::frame::value::SerializedValues::new();
 
                 #(#expanded_variables)*
+                fragments.pop();
+                fragments.pop();
+                fragments.push_str(" ");
 
-                fragments.pop();
-                fragments.pop();
                 #(#expanded_pks)*
 
                 fragments.pop();
@@ -170,9 +170,14 @@ pub(crate) fn upsert_impl(
             }
 
 
-            async fn execute(self, db: &scyllax::Executor) -> anyhow::Result<scyllax::QueryResult, scyllax::QueryError> {
+            async fn execute(self, db: &scyllax::Executor) -> Result<scyllax::QueryResult, scyllax::ScyllaxError> {
                 let (query, values) = Self::query(&self)?;
 
+                tracing::debug! {
+                    query = ?query,
+                    values = values.len(),
+                    "executing upsert"
+                };
                 db.session.execute(query, values).await.map_err(|e| e.into())
             }
         }

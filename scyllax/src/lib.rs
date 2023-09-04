@@ -1,4 +1,3 @@
-use anyhow::Result;
 pub use error::BuildUpsertQueryError;
 pub use scylla::{
     prepared_statement::PreparedStatement, transport::errors::QueryError, QueryResult,

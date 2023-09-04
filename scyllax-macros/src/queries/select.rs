@@ -78,6 +78,9 @@ pub fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     quote! {
+        #[derive(scylla::ValueList, std::fmt::Debug, std::clone::Clone, PartialEq, Hash)]
+        #input
+
         #[scyllax::async_trait]
         impl scyllax::SelectQuery<#entity_type, #return_type> for #struct_ident {
             fn query() -> String {
@@ -91,6 +94,10 @@ pub fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
 
             async fn execute(self, db: &scyllax::Executor) -> anyhow::Result<scylla::QueryResult, scylla::transport::errors::QueryError> {
                 let query = Self::query();
+                tracing::debug!{
+                    query,
+                    "executing select"
+                };
 
                 db.session.execute(query, self).await
             }
@@ -99,8 +106,5 @@ pub fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
                 #parser
             }
         }
-
-        #[derive(scylla::ValueList, std::fmt::Debug, std::clone::Clone, PartialEq, Hash)]
-        #input
     }
 }

@@ -1,9 +1,7 @@
-use darling::{export::NestedMeta, FromMeta};
+use crate::token_stream_with_error;
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
-use syn::{Data, DeriveInput, Expr, Field, ItemStruct};
-
-use crate::{queries::upsert::upsert_impl, token_stream_with_error};
+use syn::{Expr, Field, ItemStruct};
 
 /// Attribute expand
 /// Just adds the dervie macro to the struct.
@@ -34,7 +32,7 @@ pub fn expand(input: TokenStream) -> TokenStream {
 }
 
 /// EntityExt implementation
-fn entity_impl(input: &ItemStruct, pks: &Vec<&Field>) -> TokenStream {
+fn entity_impl(input: &ItemStruct, pks: &[&Field]) -> TokenStream {
     let name = &input.ident;
 
     let keys = input.fields.iter().map(get_field_name).collect::<Vec<_>>();

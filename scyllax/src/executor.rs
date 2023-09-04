@@ -1,7 +1,7 @@
-use crate::{error::ScyllaxError, EntityExt, FromRow, SelectQuery, ValueList};
+use crate::{error::ScyllaxError, EntityExt, FromRow, SelectQuery, UpsertQuery, ValueList};
 use scylla::{
     prepared_statement::PreparedStatement, query::Query, transport::errors::QueryError,
-    CachingSession, SessionBuilder,
+    CachingSession, QueryResult, SessionBuilder,
 };
 
 /// Creates a new [`CachingSession`] and returns it
@@ -53,5 +53,15 @@ impl Executor {
     ) -> Result<R, ScyllaxError> {
         let res = query.execute(self).await?;
         E::parse_response(res).await
+    }
+
+    /// Executes a [`UpsertQuery`] and returns the result
+    pub async fn execute_upsert<T: EntityExt<T> + FromRow + ValueList, E: UpsertQuery<T>>(
+        &self,
+        query: E,
+    ) -> Result<QueryResult, ScyllaxError> {
+        let res = query.execute(self).await?;
+
+        Ok(res)
     }
 }
