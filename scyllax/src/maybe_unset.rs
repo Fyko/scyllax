@@ -21,3 +21,20 @@ impl<V: Value> Value for MaybeUnset<V> {
         }
     }
 }
+
+// implement From<V> for MaybeUnset<V>
+impl<V: Value> From<V> for MaybeUnset<V> {
+    fn from(v: V) -> Self {
+        MaybeUnset::Set(v)
+    }
+}
+
+// implement From<Option<V>> for MaybeUnset<V>
+impl<V: Value> From<Option<V>> for MaybeUnset<V> {
+    fn from(v: Option<V>) -> Self {
+        match v {
+            Some(v) => MaybeUnset::Set(v),
+            None => MaybeUnset::Unset,
+        }
+    }
+}

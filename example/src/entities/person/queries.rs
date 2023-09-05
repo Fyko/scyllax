@@ -19,6 +19,18 @@ pub struct GetPersonById {
     pub id: Uuid,
 }
 
+/// Get many [`super::model::PersonEntity`] by many [`uuid::Uuid`]
+#[select_query(
+    query = "select * from person where id in ? limit ?",
+    entity_type = "Vec<super::model::PersonEntity>"
+)]
+pub struct GetPeopleByIds {
+    /// The [`uuid::Uuid`]s of the [`super::model::PersonEntity`]s to get
+    pub ids: Vec<Uuid>,
+    /// The maximum number of [`super::model::PersonEntity`]s to get
+    pub limit: i32,
+}
+
 /// Get a [`super::model::PersonEntity`] by its email address
 #[select_query(
     query = "select * from person_by_email where email = ? limit 1",

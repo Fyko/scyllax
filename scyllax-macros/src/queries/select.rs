@@ -31,6 +31,57 @@ pub fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
     };
     let struct_ident = &input.ident;
 
+    // trimmed entity_type
+    // eg: Vec<OrgEntity> -> OrgEntity
+    // eg: OrgEntity -> OrgEntity
+    let inner_entity_type = if let syn::Type::Path(path) = entity_type.clone() {
+        let last_segment = path.path.segments.last().unwrap();
+        let ident = &last_segment.ident;
+
+        if ident == "Vec" {
+            let args = &last_segment.arguments;
+            if let syn::PathArguments::AngleBracketed(args) = args {
+                let args = &args.args;
+                if args.len() != 1 {
+                    return token_stream_with_error(
+                        item,
+                        syn::Error::new_spanned(
+                            entity_type,
+                            "entity_type must be a path with one generic argument",
+                        ),
+                    );
+                }
+
+                if let syn::GenericArgument::Type(ty) = args.first().unwrap() {
+                    ty.clone()
+                } else {
+                    return token_stream_with_error(
+                        item,
+                        syn::Error::new_spanned(
+                            entity_type,
+                            "entity_type must be a path with one generic argument",
+                        ),
+                    );
+                }
+            } else {
+                return token_stream_with_error(
+                    item,
+                    syn::Error::new_spanned(
+                        entity_type,
+                        "entity_type must be a path with one generic argument",
+                    ),
+                );
+            }
+        } else {
+            entity_type.clone()
+        }
+    } else {
+        return token_stream_with_error(
+            item,
+            syn::Error::new_spanned(entity_type, "entity_type must be a path"),
+        );
+    };
+
     // if entity_type is a Vec, return type is Vec<entity_type>
     // if entity_type is not a Vec, return type is Option<entity_type>
     let return_type = if let syn::Type::Path(path) = entity_type.clone() {
@@ -63,7 +114,7 @@ pub fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
 
         if ident == "Vec" {
             quote! {
-                scyllax::match_rows!(res, #path)
+                scyllax::match_rows!(res, #inner_entity_type)
             }
         } else {
             quote! {
@@ -82,9 +133,9 @@ pub fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
         #input
 
         #[scyllax::async_trait]
-        impl scyllax::SelectQuery<#entity_type, #return_type> for #struct_ident {
+        impl scyllax::SelectQuery<#inner_entity_type, #return_type> for #struct_ident {
             fn query() -> String {
-                #query.replace("*", &#entity_type::keys().join(", "))
+                #query.replace("*", &#inner_entity_type::keys().join(", "))
             }
 
             async fn prepare(db: &Executor) -> Result<scylla::prepared_statement::PreparedStatement, scylla::transport::errors::QueryError> {

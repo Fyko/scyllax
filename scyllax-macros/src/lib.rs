@@ -11,6 +11,7 @@ pub(crate) fn token_stream_with_error(mut tokens: TokenStream2, error: syn::Erro
 }
 
 /// Apply this attribute to a struct to generate a select query.
+/// ## Single result
 /// ```rust,ignore
 /// #[select_query(
 ///     query = "select * from person where id = ? limit 1",
@@ -19,6 +20,21 @@ pub(crate) fn token_stream_with_error(mut tokens: TokenStream2, error: syn::Erro
 /// pub struct GetPersonById {
 ///     pub id: Uuid,
 /// }
+/// executor.execute_select(GetPersonById { id }).await?;
+/// // -> Option<PersonEntity>
+/// ```
+/// ## Multiple results
+/// ```rust,ignore
+/// #[select_query(
+///     query = "select * from person where id in ? limit ?",
+///     entity_type = "Vec<PersonEntity>"
+/// )]
+/// pub struct GetPeopleByIds {
+///     pub ids: Vec<Uuid>,
+///     pub limit: i32,
+/// }
+/// executor.execute_select(GetPeopleByIds { ids, limit }).await?;
+/// // -> Vec<PersonEntity>
 /// ```
 #[proc_macro_attribute]
 pub fn select_query(args: TokenStream, input: TokenStream) -> TokenStream {

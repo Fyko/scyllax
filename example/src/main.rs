@@ -1,11 +1,12 @@
 //! Example
 use entities::person::{
     model::UpsertPerson,
-    queries::{GetPersonByEmail, GetPersonById},
+    queries::{GetPeopleByIds, GetPersonByEmail, GetPersonById},
 };
 use scyllax::prelude::*;
 use scyllax::{executor::create_session, util::v1_uuid};
 use tracing_subscriber::prelude::*;
+use uuid::Uuid;
 
 pub mod entities;
 
@@ -23,32 +24,45 @@ async fn main() -> anyhow::Result<()> {
     let session = create_session(known_nodes, default_keyspace).await?;
     let executor = Executor::with_session(session);
 
-    let by_email = GetPersonByEmail {
+    let query = GetPersonByEmail {
         email: "foo11@scyllax.local".to_string(),
     };
     let res_one = executor
-        .execute_select(by_email)
+        .execute_select(query)
         .await?
         .expect("person not found");
     tracing::debug!("query 1: {:?}", res_one);
 
-    let by_id = GetPersonById { id: res_one.id };
+    let query = GetPersonById { id: res_one.id };
     let res_two = executor
-        .execute_select(by_id)
+        .execute_select(query)
         .await?
         .expect("person not found");
     tracing::debug!("query 2: {:?}", res_two);
-
     assert_eq!(res_one, res_two);
 
-    let create = UpsertPerson {
+    let ids = vec![
+        "e01e84d6-414c-11ee-be56-0242ac120002",
+        "e01e880a-414c-11ee-be56-0242ac120002",
+    ]
+    .iter()
+    .map(|s| Uuid::parse_str(s).unwrap())
+    .collect::<Vec<_>>();
+    let query = GetPeopleByIds {
+        limit: ids.len() as i32,
+        ids,
+    };
+    let res = executor.execute_select(query).await?;
+    tracing::debug!("query 3: {:?}", res);
+
+    let query = UpsertPerson {
         id: v1_uuid(),
         email: MaybeUnset::Set("foo21@scyllax.local".to_string()),
         age: MaybeUnset::Set(Some(21)),
         created_at: MaybeUnset::Unset,
     };
-    let res_three = executor.execute_upsert(create).await?;
-    tracing::debug!("query 3: {:?}", res_three);
+    let res = executor.execute_upsert(query).await?;
+    tracing::debug!("query 4: {:?}", res);
 
     Ok(())
 }
