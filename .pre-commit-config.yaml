@@ -10,9 +10,24 @@ repos:
             args: ["--indent=4", "--autofix"]
           - id: check-added-large-files
 
-    - repo: https://github.com/doublify/pre-commit-rust
-      rev: v1.0
+    # - repo: https://github.com/doublify/pre-commit-rust
+    #   rev: v1.0
+    #   hooks:
+    #       - id: fmt
+    #       - id: cargo-check
+    #       - id: clippy
+
+    - repo: local
       hooks:
-          - id: fmt
-          - id: cargo-check
-          - id: clippy
+        - id: format
+          name: format
+          entry: bash -c 'cargo make format'
+          language: system
+          types: [rust]
+          pass_filenames: false
+        - id: lint
+          name: lint
+          entry: bash -c 'cargo make lint'
+          language: system
+          types: [rust]
+          pass_filenames: false
