@@ -5,10 +5,44 @@ A SQLx and Discord inspired query system for Scylla.
 [![codecov](https://codecov.io/gh/trufflehq/scyllax/graph/badge.svg?token=OGH77YR0TA)](https://codecov.io/gh/trufflehq/scyllax)
 [![CI](https://github.com/trufflehq/scyllax/actions/workflows/ci.yml/badge.svg)](https://github.com/trufflehq/scyllax/actions/workflows/ci.yml)
 
+## Example
+### 1. Model definition
+Before you can write any queries, you have to define a model.
+```rust,ignore
+#[derive(Clone, Debug, FromRow, PartialEq, ValueList, Entity)]
+pub struct PersonEntity {
+    #[pk]
+    pub id: uuid::Uuid,
+    pub email: String,
+    pub created_at: i64,
+}
+```
+### 2. Select queries
+With the [`select_query`] attribute, it's easy to define select queries.
+```rust,ignore
+#[select_query(
+    query = "select * from person where id = ? limit 1",
+    entity_type = "PersonEntity"
+)]
+pub struct GetPersonById {
+    pub id: Uuid,
+}
+```
+### 3. Upsert queries
+With the [`upsert_query`] attribute, it's easy to define upsert queries.
+```rust,ignore
+#[upsert_query(table = "person", name = UpsertPerson)]
+#[derive(Clone, Debug, FromRow, PartialEq, ValueList, Entity)]
+pub struct PersonEntity {
+    #[pk]
+    pub id: uuid::Uuid,
+    pub email: String,
+    pub created_at: i64,
+}
+```
+
 ## Features
 - [x] Select Queries
-- ~~[ ] Insert Queries~~
-- ~~[ ] Update Queries~~
 - [x] Upsert Queries (https://github.com/trufflehq/scyllax/pull/1)
 - [ ] Delete Queries
 - [ ] Request Coalescing
@@ -19,7 +53,7 @@ A SQLx and Discord inspired query system for Scylla.
 - [ ] Eject `anyhow`, more refined errors
 
 ## Usage
-See [examples](examples) for more details.
+See the [example](example) for more details.
 
 ## References
 1. https://www.reddit.com/r/rust/comments/11ki2n7/a_look_at_how_discord_uses_rust_for_their_data/jb8dmrx/

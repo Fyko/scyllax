@@ -1,17 +1,41 @@
 [workspace]
-members = ["example", "scyllax", "scyllax-macros"]
+members = ["example", "scyllax-macros"]
 resolver = "2"
 
 [workspace.package]
-version = "0.1.0-alpha"
+version = "0.1.1-alpha"
 license = "MIT OR Apache-2.0"
 edition = "2021"
 repository = "https://github.com/trufflehq/scyllax"
 keywords = ["scylla", "cassandra", "orm", "sqlx", "trufflehq", "truffle", "youtube", "twitch"]
+categories = ["database"]
 authors = [
     "Carter Himmel <carter@truffle.vip>"
 ]
 homepage = "https://github.com/trufflehq/scyllax#readme"
+
+[package]
+name = "scyllax"
+readme = "README.md"
+description = "A SQLx and Discord inspired query system for Scylla"
+version = { workspace = true }
+license = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = "0.1"
+getrandom = "0.2"
+mac_address = "1"
+once_cell = "1"
+scylla = { workspace = true }
+scyllax-macros = { version = "0.1.1-alpha", path = "./scyllax-macros" }
+thiserror = "1"
+tracing = { workspace = true }
+uuid = { workspace = true }
 
 [workspace.dependencies]
 scyllax-macros = { verison = "0.1.0-alpha", path = "scyllax-macros" }

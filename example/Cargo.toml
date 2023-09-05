@@ -12,7 +12,7 @@ publish = false
 [dependencies]
 anyhow = { workspace = true }
 scylla = { workspace = true }
-scyllax = { path = "../scyllax" }
+scyllax = { path = "../" }
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
