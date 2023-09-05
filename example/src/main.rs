@@ -41,7 +41,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::debug!("query 2: {:?}", res_two);
     assert_eq!(res_one, res_two);
 
-    let ids = vec![
+    let ids = [
         "e01e84d6-414c-11ee-be56-0242ac120002",
         "e01e880a-414c-11ee-be56-0242ac120002",
     ]
