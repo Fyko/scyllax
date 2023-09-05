@@ -1,4 +1,4 @@
-# scyllax
+# scyllax (sɪl-æks)
 A SQLx and Discord inspired query system for Scylla.
 
 [![discord](https://img.shields.io/discord/1080316613968011335?color=5865F2&logo=discord&logoColor=white)](https://discord.gg/FahQSBMMGg)
@@ -46,7 +46,9 @@ pub struct PersonEntity {
 - [x] Upsert Queries (https://github.com/trufflehq/scyllax/pull/1)
 - [ ] Delete Queries
 - [ ] Request Coalescing
-- [ ] Compile-time Query Validation
+- [ ] Compile-time Select Query Validation
+  - ensure the where constraints exist on the struct
+  - ensure the where constraints are the same type as the struct
 - [ ] Runtime Query Validation (structure matches schema)
 
 ### Todo
