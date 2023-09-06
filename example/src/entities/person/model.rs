@@ -1,8 +1,8 @@
 use scyllax::prelude::*;
 
 /// Represents a person in the database
+#[entity]
 #[upsert_query(table = "person", name = UpsertPerson)]
-#[derive(Clone, Debug, FromRow, PartialEq, ValueList, Entity)]
 pub struct PersonEntity {
     /// The id of the person
     #[pk]

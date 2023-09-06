@@ -73,6 +73,13 @@ pub fn get_field_name(field: &Field) -> String {
         .to_string()
 }
 
+pub fn expand_attr(_args: TokenStream, input: TokenStream) -> TokenStream {
+    quote! {
+        #[derive(Clone, Debug, PartialEq, scyllax::FromRow, scyllax::prelude::ValueList, scyllax::Entity)]
+        #input
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

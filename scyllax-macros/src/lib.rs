@@ -76,3 +76,13 @@ pub fn upsert_query(args: TokenStream, input: TokenStream) -> TokenStream {
 pub fn entity_derive(input: TokenStream) -> TokenStream {
     entity::expand(input.into()).into()
 }
+
+/// Shorthand for applying derive macros on an entity. Essentially:
+/// ```rust,ignore
+/// #[derive(Clone, Debug, FromRow, PartialEq, ValueList, Entity)]
+/// #input
+/// ```
+#[proc_macro_attribute]
+pub fn entity(args: TokenStream, input: TokenStream) -> TokenStream {
+    entity::expand_attr(args.into(), input.into()).into()
+}
