@@ -41,6 +41,20 @@ pub fn select_query(args: TokenStream, input: TokenStream) -> TokenStream {
     queries::select::expand(args.into(), input.into()).into()
 }
 
+/// Apply this attribute to a struct to generate a delete query.
+/// ```rust,ignore
+/// #[delete_query(
+///    query = "delete from person where id = ?",
+/// )]
+/// pub struct DeletePersonById {
+///    pub id: Uuid,
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn delete_query(args: TokenStream, input: TokenStream) -> TokenStream {
+    queries::delete::expand(args.into(), input.into()).into()
+}
+
 /// Apply this attribute to a entity struct to generate an upsert query.
 /// ```rust,ignore
 /// #[upsert_query(table = "person", name = UpsertPerson)]

@@ -95,3 +95,18 @@ pub trait UpsertQuery<T: EntityExt<T> + ImplValueList + FromRow> {
     /// Executes the query
     async fn execute(self, db: &Executor) -> Result<QueryResult, ScyllaxError>;
 }
+
+/// The trait that's implemented on delete queries
+// R is the return type of the query
+// It can be either Option<T> or Vec<T>
+#[async_trait]
+pub trait DeleteQuery<T: EntityExt<T> + ImplValueList + FromRow> {
+    /// Returns the query as a string
+    fn query() -> String;
+
+    /// Prepares the query
+    async fn prepare(db: &Executor) -> Result<PreparedStatement, QueryError>;
+
+    /// Executes the query
+    async fn execute(self, db: &Executor) -> Result<QueryResult, QueryError>;
+}

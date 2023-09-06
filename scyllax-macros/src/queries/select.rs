@@ -6,12 +6,12 @@ use syn::ItemStruct;
 use crate::token_stream_with_error;
 
 #[derive(FromMeta)]
-pub struct SelectQueryOptions {
+pub(crate) struct SelectQueryOptions {
     query: String,
     entity_type: syn::Type,
 }
 
-pub fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
+pub(crate) fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
     let attr_args = match NestedMeta::parse_meta_list(args.clone()) {
         Ok(args) => args,
         Err(e) => return darling::Error::from(e).write_errors(),

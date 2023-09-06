@@ -13,7 +13,7 @@ pub(crate) struct UpsertQueryOptions {
 
 /// Attribute expand
 /// Just adds the dervie macro to the struct.
-pub fn expand(args: TokenStream, input: TokenStream) -> TokenStream {
+pub(crate) fn expand(args: TokenStream, input: TokenStream) -> TokenStream {
     let attr_args = match NestedMeta::parse_meta_list(args.clone()) {
         Ok(args) => args,
         Err(e) => return darling::Error::from(e).write_errors(),

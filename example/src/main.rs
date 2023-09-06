@@ -1,7 +1,7 @@
 //! Example
 use entities::person::{
     model::UpsertPerson,
-    queries::{GetPeopleByIds, GetPersonByEmail, GetPersonById},
+    queries::{load, DeletePersonById, GetPeopleByIds, GetPersonByEmail, GetPersonById},
 };
 use scyllax::prelude::*;
 use scyllax::{executor::create_session, util::v1_uuid};
@@ -22,7 +22,9 @@ async fn main() -> anyhow::Result<()> {
     let default_keyspace = std::env::var("SCYLLA_DEFAULT_KEYSPACE").ok();
 
     let session = create_session(known_nodes, default_keyspace).await?;
-    let executor = Executor::with_session(session);
+    let mut executor = Executor::with_session(session);
+
+    load(&mut executor).await?;
 
     let query = GetPersonByEmail {
         email: "foo11@scyllax.local".to_string(),
@@ -31,14 +33,14 @@ async fn main() -> anyhow::Result<()> {
         .execute_select(query)
         .await?
         .expect("person not found");
-    tracing::debug!("query 1: {:?}", res_one);
+    tracing::info!("GetPersonByEmail returned: {:?}", res_one);
 
     let query = GetPersonById { id: res_one.id };
     let res_two = executor
         .execute_select(query)
         .await?
         .expect("person not found");
-    tracing::debug!("query 2: {:?}", res_two);
+    tracing::info!("GetPersonById returned: {:?}", res_two);
     assert_eq!(res_one, res_two);
 
     let ids = [
@@ -53,16 +55,21 @@ async fn main() -> anyhow::Result<()> {
         ids,
     };
     let res = executor.execute_select(query).await?;
-    tracing::debug!("query 3: {:?}", res);
+    tracing::info!("GetPeopleByIds returned: {:?}", res);
 
+    let upsert_id = v1_uuid();
     let query = UpsertPerson {
-        id: v1_uuid(),
+        id: upsert_id,
         email: MaybeUnset::Set("foo21@scyllax.local".to_string()),
         age: MaybeUnset::Set(Some(21)),
         created_at: MaybeUnset::Unset,
     };
     let res = executor.execute_upsert(query).await?;
-    tracing::debug!("query 4: {:?}", res);
+    tracing::info!("UpsertPerson returned: {:?}", res);
+
+    let delete = DeletePersonById { id: upsert_id };
+    let res = executor.execute_delete(delete).await?;
+    tracing::info!("DeletePersonById returned: {:?}", res);
 
     Ok(())
 }
