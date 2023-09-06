@@ -16,136 +16,82 @@ pub struct PersonEntity {
     pub created_at: i64,
 }
 
-// struct UpsertPerson {
-//     pub id: uuid::Uuid,
-//     pub email: MaybeUnset<String>,
-//     pub age: MaybeUnset<Option<i32>>,
-//     pub first_name: MaybeUnset<String>,
-// }
+#[cfg(test)]
+mod test {
+    use super::PersonEntity;
+    use crate::entities::person::model::UpsertPerson;
+    use pretty_assertions::assert_eq;
+    use scyllax::prelude::*;
 
-// TODO: macroify
-// TODO: use insert if every field is a PK
-// #[scyllax::async_trait]
-// impl UpsertQuery<PersonEntity> for UpsertPerson {
-//     fn query(
-//         &self,
-//     ) -> Result<(String, scylla::frame::value::SerializedValues), BuildUpsertQueryError> {
-//         let mut query = String::from("update person set ");
-//         let mut variables = scylla::frame::value::SerializedValues::new();
+    #[test]
+    fn test_pks() {
+        assert_eq!(PersonEntity::pks(), vec!["id".to_string()]);
+    }
 
-//         if let MaybeUnset::Set(first_name) = &self.first_name {
-//             query.push_str(&format!(r##"first_name = ?, "##));
+    #[test]
+    fn test_keys() {
+        assert_eq!(
+            PersonEntity::keys(),
+            vec![
+                "id".to_string(),
+                "email".to_string(),
+                "age".to_string(),
+                "\"createdAt\"".to_string()
+            ]
+        );
+    }
 
-//             match variables.add_value(first_name) {
-//                 Ok(_) => (),
-//                 Err(SerializeValuesError::TooManyValues) => {
-//                     return Err(BuildUpsertQueryError::TooManyValues {
-//                         field: "first_name".to_string(),
-//                     })
-//                 }
-//                 Err(SerializeValuesError::MixingNamedAndNotNamedValues) => {
-//                     return Err(BuildUpsertQueryError::MixingNamedAndNotNamedValues)
-//                 }
-//                 Err(SerializeValuesError::ValueTooBig(_)) => {
-//                     return Err(BuildUpsertQueryError::ValueTooBig {
-//                         field: "first_name".to_string(),
-//                     })
-//                 }
-//                 Err(SerializeValuesError::ParseError) => {
-//                     return Err(BuildUpsertQueryError::ParseError {
-//                         field: "first_name".to_string(),
-//                     })
-//                 }
-//             }
-//         }
+    #[test]
+    fn test_upsert_v1() {
+        let upsert = UpsertPerson {
+            id: v1_uuid(),
+            email: MaybeUnset::Set("foo21@scyllax.local".to_string()),
+            age: MaybeUnset::Set(Some(21)),
+            created_at: MaybeUnset::Unset,
+        };
 
-//         if let MaybeUnset::Set(email) = &self.email {
-//             query.push_str(r##"email = ?, "##);
-//             match variables.add_value(email) {
-//                 Ok(_) => (),
-//                 Err(SerializeValuesError::TooManyValues) => {
-//                     return Err(BuildUpsertQueryError::TooManyValues {
-//                         field: "email".to_string(),
-//                     })
-//                 }
-//                 Err(SerializeValuesError::MixingNamedAndNotNamedValues) => {
-//                     return Err(BuildUpsertQueryError::MixingNamedAndNotNamedValues)
-//                 }
-//                 Err(SerializeValuesError::ValueTooBig(_)) => {
-//                     return Err(BuildUpsertQueryError::ValueTooBig {
-//                         field: "email".to_string(),
-//                     })
-//                 }
-//                 Err(SerializeValuesError::ParseError) => {
-//                     return Err(BuildUpsertQueryError::ParseError {
-//                         field: "email".to_string(),
-//                     })
-//                 }
-//             }
-//         }
+        let (query, values) = upsert.query().expect("failed to parse into query");
 
-//         if let MaybeUnset::Set(age) = &self.age {
-//             // age is also optional, so we have to unwrap it
-//             if let Some(age) = age {
-//                 query.push_str("age = ?, ");
-//                 match variables.add_value(age) {
-//                     Ok(_) => (),
-//                     Err(SerializeValuesError::TooManyValues) => {
-//                         return Err(BuildUpsertQueryError::TooManyValues {
-//                             field: "age".to_string(),
-//                         })
-//                     }
-//                     Err(SerializeValuesError::MixingNamedAndNotNamedValues) => {
-//                         return Err(BuildUpsertQueryError::MixingNamedAndNotNamedValues)
-//                     }
-//                     Err(SerializeValuesError::ValueTooBig(_)) => {
-//                         return Err(BuildUpsertQueryError::ValueTooBig {
-//                             field: "age".to_string(),
-//                         })
-//                     }
-//                     Err(SerializeValuesError::ParseError) => {
-//                         return Err(BuildUpsertQueryError::ParseError {
-//                             field: "age".to_string(),
-//                         })
-//                     }
-//                 }
-//             }
-//         }
+        assert_eq!(
+            query,
+            r#"update "person" set "email" = ?, "age" = ? where "id" = ?;"#
+        );
 
-//         query.pop();
-//         query.pop();
-//         query.push_str(" where id = ?;");
-//         match variables.add_value(&self.id) {
-//             Ok(_) => (),
-//             Err(SerializeValuesError::TooManyValues) => {
-//                 return Err(BuildUpsertQueryError::TooManyValues {
-//                     field: "id".to_string(),
-//                 })
-//             }
-//             Err(SerializeValuesError::MixingNamedAndNotNamedValues) => {
-//                 return Err(BuildUpsertQueryError::MixingNamedAndNotNamedValues)
-//             }
-//             Err(SerializeValuesError::ValueTooBig(_)) => {
-//                 return Err(BuildUpsertQueryError::ValueTooBig {
-//                     field: "id".to_string(),
-//                 })
-//             }
-//             Err(SerializeValuesError::ParseError) => {
-//                 return Err(BuildUpsertQueryError::ParseError {
-//                     field: "id".to_string(),
-//                 })
-//             }
-//         }
+        let mut result_values = SerializedValues::new();
+        result_values
+            .add_value(&upsert.email)
+            .expect("failed to add value");
+        result_values
+            .add_value(&upsert.age)
+            .expect("failed to add value");
+        result_values
+            .add_value(&upsert.id)
+            .expect("failed to add value");
 
-//         Ok((query, variables))
-//     }
+        assert_eq!(values, result_values);
+    }
 
-//     async fn execute(
-//         self,
-//         db: &scyllax::Executor,
-//     ) -> anyhow::Result<scylla::QueryResult, ScyllaxError> {
-//         let (query, values) = self.query()?;
+    #[test]
+    fn test_upsert_v2() {
+        let upsert = UpsertPerson {
+            id: v1_uuid(),
+            email: MaybeUnset::Set("foo21@scyllax.local".to_string()),
+            age: MaybeUnset::Unset,
+            created_at: MaybeUnset::Unset,
+        };
 
-//         db.session.execute(query, values).await.map_err(|e| e.into())
-//     }
-// }
+        let (query, values) = upsert.query().expect("failed to parse into query");
+
+        assert_eq!(query, r#"update "person" set "email" = ? where "id" = ?;"#);
+
+        let mut result_values = SerializedValues::new();
+        result_values
+            .add_value(&upsert.email)
+            .expect("failed to add value");
+        result_values
+            .add_value(&upsert.id)
+            .expect("failed to add value");
+
+        assert_eq!(values, result_values);
+    }
+}

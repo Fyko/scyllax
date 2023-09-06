@@ -30,4 +30,11 @@ mod tests {
         assert_eq!(uuid.get_version(), Some(uuid::Version::Mac));
         assert_eq!(uuid.get_variant(), uuid::Variant::RFC4122);
     }
+
+    #[test]
+    fn test_get_mac_address() {
+        let mac = get_mac_address();
+
+        assert_eq!(mac.len(), 6);
+    }
 }

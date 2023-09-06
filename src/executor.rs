@@ -1,6 +1,8 @@
 //! The `scyllax` [`Executor`] processes queries.
 
-use crate::{error::ScyllaxError, EntityExt, FromRow, ImplValueList, SelectQuery, UpsertQuery};
+use crate::{
+    error::ScyllaxError, DeleteQuery, EntityExt, FromRow, ImplValueList, SelectQuery, UpsertQuery,
+};
 use scylla::{
     prepared_statement::PreparedStatement, query::Query, transport::errors::QueryError,
     CachingSession, QueryResult, SessionBuilder,
@@ -56,6 +58,16 @@ impl Executor {
     ) -> Result<R, ScyllaxError> {
         let res = query.execute(self).await?;
         E::parse_response(res).await
+    }
+
+    /// Executes a [`DeleteQuery`] and returns the result
+    pub async fn execute_delete<T: EntityExt<T> + FromRow + ImplValueList, E: DeleteQuery<T>>(
+        &self,
+        query: E,
+    ) -> Result<QueryResult, ScyllaxError> {
+        let res = query.execute(self).await?;
+
+        Ok(res)
     }
 
     /// Executes a [`UpsertQuery`] and returns the result
