@@ -1,6 +1,6 @@
 //! Example
 use entities::person::{
-    model::UpsertPerson,
+    model::{PersonData, UpsertPerson},
     queries::{load, DeletePersonById, GetPeopleByIds, GetPersonByEmail, GetPersonById},
 };
 use scyllax::prelude::*;
@@ -27,7 +27,7 @@ async fn main() -> anyhow::Result<()> {
     load(&mut executor).await?;
 
     let query = GetPersonByEmail {
-        email: "foo11@scyllax.local".to_string(),
+        email: "foo1@scyllax.local".to_string(),
     };
     let res_one = executor
         .execute_select(query)
@@ -62,6 +62,9 @@ async fn main() -> anyhow::Result<()> {
         id: upsert_id,
         email: MaybeUnset::Set("foo21@scyllax.local".to_string()),
         age: MaybeUnset::Set(Some(21)),
+        data: MaybeUnset::Set(Some(PersonData {
+            stripe_id: Some("stripe_id".to_string()),
+        })),
         created_at: MaybeUnset::Unset,
     };
     let res = executor.execute_upsert(query).await?;

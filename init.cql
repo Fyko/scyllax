@@ -9,17 +9,18 @@ create table person (
 	id timeuuid primary key,
 	email text,
 	age int,
+	data text, -- json type
 	-- camel case for the sake of backwards compat
 	"createdAt" timestamp
 );
 
 create materialized view person_by_email as
-  select id, email, "createdAt"
+  select *
   from person
   where email is not null and id is not null
   primary key (email, id);
 
-insert into person(id, email, age, "createdAt") values (e01e84d6-414c-11ee-be56-0242ac120002, 'foo1@scyllax.local', 25, toUnixTimestamp(now()));
+insert into person(id, email, age, data, "createdAt") values (e01e84d6-414c-11ee-be56-0242ac120002, 'foo1@scyllax.local', 25, "{\"foo\": \"bar\"}", toUnixTimestamp(now()));
 insert into person(id, email, age, "createdAt") values (e01e880a-414c-11ee-be56-0242ac120002, 'foo2@scyllax.local', 25, toUnixTimestamp(now()));
 insert into person(id, email, age, "createdAt") values (e01e89c2-414c-11ee-be56-0242ac120002, 'foo3@scyllax.local', 25, toUnixTimestamp(now()));
 insert into person(id, email, age, "createdAt") values (e01e8b2a-414c-11ee-be56-0242ac120002, 'foo4@scyllax.local', 25, toUnixTimestamp(now()));

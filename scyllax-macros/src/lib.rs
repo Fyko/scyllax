@@ -3,6 +3,7 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 
 mod entity;
+mod json;
 mod queries;
 
 pub(crate) fn token_stream_with_error(mut tokens: TokenStream2, error: syn::Error) -> TokenStream2 {
@@ -85,4 +86,24 @@ pub fn entity_derive(input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn entity(args: TokenStream, input: TokenStream) -> TokenStream {
     entity::expand_attr(args.into(), input.into()).into()
+}
+
+/// Implements
+/// * [`scylla::frame::value::Value`] and
+/// * [`scylla::cql_to_rust::FromCqlVal`]
+///
+/// for a struct.
+#[proc_macro_derive(JsonData, attributes(rename))]
+pub fn json_derive(input: TokenStream) -> TokenStream {
+    json::expand(input.into()).into()
+}
+
+/// Shorthand for applying derive macros on a JSON body. Essentially:
+/// ```rust,ignore
+/// #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize, scyllax::prelude::Json)]
+/// #input
+/// ```
+#[proc_macro_attribute]
+pub fn json_data(args: TokenStream, input: TokenStream) -> TokenStream {
+    json::expand_attr(args.into(), input.into()).into()
 }
