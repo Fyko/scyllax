@@ -44,7 +44,7 @@ pub struct PersonEntity {
 ## Features
 - [x] Select Queries
 - [x] Upsert Queries (https://github.com/trufflehq/scyllax/pull/1)
-- [ ] Delete Queries
+- [x] Delete Queries
 - [ ] Request Coalescing
 - [ ] Compile-time Select Query Validation
   - ensure the where constraints exist on the struct

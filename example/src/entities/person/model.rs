@@ -1,5 +1,13 @@
 use scyllax::prelude::*;
 
+/// Represents data from a person
+#[json_data]
+pub struct PersonData {
+    /// The stripe id of the person
+    #[serde(rename = "stripeId")]
+    pub stripe_id: Option<String>,
+}
+
 /// Represents a person in the database
 #[entity]
 #[upsert_query(table = "person", name = UpsertPerson)]
@@ -11,6 +19,8 @@ pub struct PersonEntity {
     pub email: String,
     /// The age of the person
     pub age: Option<i32>,
+    /// Other data from the person
+    pub data: Option<PersonData>,
     /// The date the person was created
     #[rename("createdAt")]
     pub created_at: i64,
@@ -18,10 +28,9 @@ pub struct PersonEntity {
 
 #[cfg(test)]
 mod test {
-    use super::PersonEntity;
+    use super::*;
     use crate::entities::person::model::UpsertPerson;
     use pretty_assertions::assert_eq;
-    use scyllax::prelude::*;
 
     #[test]
     fn test_pks() {
@@ -36,17 +45,21 @@ mod test {
                 "id".to_string(),
                 "email".to_string(),
                 "age".to_string(),
+                "data".to_string(),
                 "\"createdAt\"".to_string()
             ]
         );
     }
 
     #[test]
-    fn test_upsert_v1() {
+    fn test_upsert() {
         let upsert = UpsertPerson {
             id: v1_uuid(),
             email: MaybeUnset::Set("foo21@scyllax.local".to_string()),
-            age: MaybeUnset::Set(Some(21)),
+            age: MaybeUnset::Unset,
+            data: MaybeUnset::Set(Some(PersonData {
+                stripe_id: Some("stripe_id".to_string()),
+            })),
             created_at: MaybeUnset::Unset,
         };
 
@@ -54,42 +67,24 @@ mod test {
 
         assert_eq!(
             query,
-            r#"update "person" set "email" = ?, "age" = ? where "id" = ?;"#
+            r#"update person set email = :email, age = :age, data = :data, "createdAt" = :created_at where id = :id;"#
         );
 
         let mut result_values = SerializedValues::new();
         result_values
-            .add_value(&upsert.email)
+            .add_named_value("email", &upsert.email)
             .expect("failed to add value");
         result_values
-            .add_value(&upsert.age)
+            .add_named_value("age", &upsert.age)
             .expect("failed to add value");
         result_values
-            .add_value(&upsert.id)
-            .expect("failed to add value");
-
-        assert_eq!(values, result_values);
-    }
-
-    #[test]
-    fn test_upsert_v2() {
-        let upsert = UpsertPerson {
-            id: v1_uuid(),
-            email: MaybeUnset::Set("foo21@scyllax.local".to_string()),
-            age: MaybeUnset::Unset,
-            created_at: MaybeUnset::Unset,
-        };
-
-        let (query, values) = upsert.query().expect("failed to parse into query");
-
-        assert_eq!(query, r#"update "person" set "email" = ? where "id" = ?;"#);
-
-        let mut result_values = SerializedValues::new();
-        result_values
-            .add_value(&upsert.email)
+            .add_named_value("data", &upsert.data)
             .expect("failed to add value");
         result_values
-            .add_value(&upsert.id)
+            .add_named_value("created_at", &upsert.created_at)
+            .expect("failed to add value");
+        result_values
+            .add_named_value("id", &upsert.id)
             .expect("failed to add value");
 
         assert_eq!(values, result_values);

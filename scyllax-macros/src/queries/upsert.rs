@@ -107,8 +107,9 @@ pub(crate) fn upsert_impl(
         }
     };
 
+    // SET clauses
     // expanded variables will loop over every field that isn't Pk
-    let expanded_variables = fields
+    let (set_columns, set_sv_push) = fields
         .iter()
         // filter out pks
         .filter(|f| !pks.contains(f))
@@ -116,22 +117,22 @@ pub(crate) fn upsert_impl(
             let ident = &f.ident.clone().unwrap();
             let col = get_field_name(f);
             let errors = error_switchback(f);
+            let ident_string = ident.to_string();
 
-            quote! {
-                if let scyllax::prelude::MaybeUnset::Set(#ident) = &self.#ident {
-                    // FIX: ident
-                    fragments.push_str(concat!(stringify!(#col = ?,), " "));
-
-                    match variables.add_value(#ident) {
+            (
+                (col.clone(), ident_string.clone()),
+                quote! {
+                    match variables.add_named_value(#ident_string, &self.#ident) {
                         Ok(_) => (),
                         #errors
-                    }
-                }
-            }
+                    };
+                },
+            )
         })
-        .collect::<Vec<_>>();
+        .unzip::<_, _, Vec<_>, Vec<_>>();
 
-    let expanded_pks = fields
+    // WHERE clauses
+    let (where_columns, where_sv_push) = fields
         .iter()
         // filter out pks
         .filter(|f| pks.contains(f))
@@ -139,16 +140,31 @@ pub(crate) fn upsert_impl(
             let ident = &f.ident.clone().unwrap();
             let col = get_field_name(f);
             let errors = error_switchback(f);
+            let ident_string = ident.to_string();
 
-            quote! {
-                fragments.push_str(concat!(stringify!(where #col = ?,), " "));
-                match variables.add_value(&self.#ident) {
-                    Ok(_) => (),
-                    #errors
-                }
-            }
+            (
+                (col.clone(), ident_string.clone()),
+                quote! {
+                    match variables.add_named_value(#ident_string, &self.#ident) {
+                        Ok(_) => (),
+                        #errors
+                    };
+                },
+            )
         })
-        .collect::<Vec<_>>();
+        .unzip::<_, _, Vec<_>, Vec<_>>();
+
+    let mut query = format!("update {upsert_table} set");
+    for (col, named_value) in set_columns {
+        query.push_str(&format!(" {col} = :{named_value},"));
+    }
+    query.pop();
+    query.push_str(" where");
+    for (col, named_value) in where_columns {
+        query.push_str(&format!(" {col} = :{named_value},"));
+    }
+    query.pop();
+    query.push(';');
 
     quote! {
         #input
@@ -160,22 +176,13 @@ pub(crate) fn upsert_impl(
             fn query(
                 &self,
             ) -> Result<(String, scyllax::prelude::SerializedValues), scyllax::BuildUpsertQueryError> {
-                let mut fragments = String::from(concat!(stringify!(update #upsert_table set ), " "));
+                let query = #query.to_string();
                 let mut variables = scylla::frame::value::SerializedValues::new();
 
-                #(#expanded_variables)*
-                fragments.pop();
-                fragments.pop();
-                fragments.push_str(" ");
+                #(#set_sv_push)*
+                #(#where_sv_push)*
 
-                #(#expanded_pks)*
-
-                fragments.pop();
-                fragments.pop();
-
-                fragments.push_str(";");
-
-                Ok((fragments, variables))
+                Ok((query, variables))
             }
 
 

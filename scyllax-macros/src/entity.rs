@@ -55,7 +55,7 @@ fn entity_impl(input: &ItemStruct, pks: &[&Field]) -> TokenStream {
 ///
 /// Rename is usually used to support camelCase keys, which need to be wrapped
 /// in quotes or scylla will snake_ify it.
-pub fn get_field_name(field: &Field) -> String {
+pub(crate) fn get_field_name(field: &Field) -> String {
     let rename = field.attrs.iter().find(|a| a.path().is_ident("rename"));
     if let Some(rename) = rename {
         let expr = rename.parse_args::<Expr>().expect("Expected an expression");
@@ -73,7 +73,7 @@ pub fn get_field_name(field: &Field) -> String {
         .to_string()
 }
 
-pub fn expand_attr(_args: TokenStream, input: TokenStream) -> TokenStream {
+pub(crate) fn expand_attr(_args: TokenStream, input: TokenStream) -> TokenStream {
     quote! {
         #[derive(Clone, Debug, PartialEq, scyllax::FromRow, scyllax::prelude::ValueList, scyllax::Entity)]
         #input
@@ -97,7 +97,7 @@ mod tests {
         let example_struct = r#"
             struct Example {
                 foo: String,
-                #[rename = "bAr"]
+                #[rename("bAr")]
                 bar: String,
             }
         "#;
