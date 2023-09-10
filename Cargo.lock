@@ -911,6 +911,7 @@ dependencies = [
  "once_cell",
  "scylla",
  "scyllax-macros",
+ "scyllax-macros-core",
  "thiserror",
  "tracing",
  "uuid",
@@ -918,6 +919,13 @@ dependencies = [
 
 [[package]]
 name = "scyllax-macros"
+version = "0.1.4-alpha"
+dependencies = [
+ "scyllax-macros-core",
+]
+
+[[package]]
+name = "scyllax-macros-core"
 version = "0.1.4-alpha"
 dependencies = [
  "anyhow",

@@ -1,7 +1,9 @@
 //! Example
 use entities::person::{
     model::{PersonData, UpsertPerson},
-    queries::{load, DeletePersonById, GetPeopleByIds, GetPersonByEmail, GetPersonById},
+    queries::{
+        DeletePersonById, GetPeopleByIds, GetPersonByEmail, GetPersonById, PersonEntityQueries,
+    },
 };
 use scyllax::prelude::*;
 use scyllax::{executor::create_session, util::v1_uuid};
@@ -22,9 +24,9 @@ async fn main() -> anyhow::Result<()> {
     let default_keyspace = std::env::var("SCYLLA_DEFAULT_KEYSPACE").ok();
 
     let session = create_session(known_nodes, default_keyspace).await?;
-    let mut executor = Executor::with_session(session);
+    let queries = PersonEntityQueries::new(&session).await?;
 
-    load(&mut executor).await?;
+    let mut executor = Executor::with_session(session, queries);
 
     let query = GetPersonByEmail {
         email: "foo1@scyllax.local".to_string(),

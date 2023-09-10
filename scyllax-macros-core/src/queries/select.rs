@@ -1,17 +1,22 @@
+//! Macros for the `#[select_query]` attribute macro.
 use darling::{export::NestedMeta, FromMeta};
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{quote, ToTokens};
 use syn::ItemStruct;
 
 use crate::token_stream_with_error;
 
+/// Options for the `#[select_query]` attribute macro.
 #[derive(FromMeta)]
-pub(crate) struct SelectQueryOptions {
+pub struct SelectQueryOptions {
+    /// The query to execute.
     query: String,
+    /// The type of the entity to return.
     entity_type: syn::Type,
 }
 
-pub(crate) fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
+/// Expand the `#[select_query]` attribute macro.
+pub fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
     let attr_args = match NestedMeta::parse_meta_list(args.clone()) {
         Ok(args) => args,
         Err(e) => return darling::Error::from(e).write_errors(),
@@ -128,29 +133,28 @@ pub(crate) fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
         );
     };
 
+    // FIXME: actually use the correct value. somehow??
+    let query_cache = inner_entity_type.clone();
+
     quote! {
-        #[derive(scylla::ValueList, std::fmt::Debug, std::clone::Clone, PartialEq, Hash)]
+        #[derive(scylla::ValueList, scylla::FromRow, std::fmt::Debug, std::clone::Clone, PartialEq, Hash)]
         #input
 
-        #[scyllax::async_trait]
-        impl scyllax::SelectQuery<#inner_entity_type, #return_type> for #struct_ident {
+        impl scyllax::GenericQuery<#inner_entity_type> for #struct_ident {
             fn query() -> String {
                 #query.replace("*", &#inner_entity_type::keys().join(", "))
             }
+        }
 
-            async fn prepare(db: &Executor) -> Result<scylla::prepared_statement::PreparedStatement, scylla::transport::errors::QueryError> {
-                tracing::debug!("preparing query {}", stringify!(#struct_ident));
-                db.session.add_prepared_statement(&scylla::query::Query::new(Self::query())).await
-            }
-
-            async fn execute(self, db: &scyllax::Executor) -> anyhow::Result<scylla::QueryResult, scylla::transport::errors::QueryError> {
-                let query = Self::query();
+        #[scyllax::async_trait]
+        impl scyllax::SelectQuery<#inner_entity_type, #return_type, #query_cache> for #struct_ident {
+            async fn execute(self, db: &scyllax::Executor<#query_cache>) -> Result<scylla::QueryResult, scylla::transport::errors::QueryError> {
+                let statement = db.queries.get::<#struct_ident>();
                 tracing::debug!{
-                    query,
                     "executing select"
                 };
 
-                db.session.execute(query, self).await
+                db.session.execute(statement, self).await
             }
 
             async fn parse_response(res: scylla::QueryResult) -> Result<#return_type, scyllax::ScyllaxError> {

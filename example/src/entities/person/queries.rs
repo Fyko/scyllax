@@ -1,18 +1,20 @@
+use scyllax::PreparedStatement;
+#[allow(non_snake_case)]
 use scyllax::{delete_query, prelude::*};
 use uuid::Uuid;
 
-/// Load all queries for this entity
-#[tracing::instrument(skip(db))]
-pub async fn load(db: &mut Executor) -> anyhow::Result<()> {
-    let _ = GetPersonById::prepare(db).await;
-    let _ = GetPeopleByIds::prepare(db).await;
-    let _ = GetPersonByEmail::prepare(db).await;
-    let _ = DeletePersonById::prepare(db).await;
-
-    Ok(())
-}
+prepare_queries!(
+    PersonEntityQueries,
+    [
+        GetPersonById,
+        GetPeopleByIds,
+        GetPersonByEmail,
+        // DeletePersonById
+    ]
+);
 
 /// Get a [`super::model::PersonEntity`] by its [`uuid::Uuid`]
+// #[derive(scylla::ValueList, std::fmt::Debug, std::clone::Clone, PartialEq, Hash)]
 #[select_query(
     query = "select * from person where id = ? limit 1",
     entity_type = "super::model::PersonEntity"
@@ -21,6 +23,59 @@ pub struct GetPersonById {
     /// The [`uuid::Uuid`] of the [`super::model::PersonEntity`] to get
     pub id: Uuid,
 }
+
+// impl scyllax::GenericQuery<PersonEntity> for GetPersonById {
+//     fn query() -> String {
+//         "select * from person where id = ? limit 1"
+//             .replace("*", &PersonEntity::keys().join(", "))
+//     }
+// }
+
+// #[scyllax::async_trait]
+// impl scyllax::SelectQuery<PersonEntity, PersonEntity, PersonQueries> for GetPersonById {
+//     async fn execute(self, db: &scyllax::Executor<PersonQueries>) -> anyhow::Result<scylla::QueryResult, scylla::transport::errors::QueryError> {
+//         let statement = db.queries.get::<GetPersonById>();
+//         tracing::debug!{
+//             target = "GetPersonById",
+//             "executing select"
+//         };
+
+//         db.session.execute(statement, self).await
+//     }
+
+//     async fn parse_response(res: scylla::QueryResult) -> Result<GetPersonById, scyllax::ScyllaxError> {
+//         todo!()
+//     }
+// }
+
+// pub struct PersonQueries {
+//     GetPersonById: PreparedStatement,
+// }
+
+// #[scyllax::async_trait]
+// #[doc = "A collection of prepared statements."]
+// impl scyllax::Queries for PersonQueries {
+//     async fn new(session: &scylla::Session) -> Result<Self, scyllax::ScyllaxError> {
+//         Ok(Self {
+//             GetPersonById: session.prepare(GetPersonById::query()).await?,
+//         })
+//     }
+
+//     #[doc = "Get a prepared statement."]
+//     fn get<T>(&self) -> &scylla::statement::prepared_statement::PreparedStatement
+//     where
+//         Self: scyllax::GetPreparedStatement<T>,
+//     {
+//         <Self as scyllax::GetPreparedStatement<T>>::get_prepared_statement(self)
+//     }
+// }
+
+// impl scyllax::GetPreparedStatement<GetPersonById> for PersonQueries {
+//     #[doc = "Get a prepared statement."]
+//     fn get_prepared_statement(&self) -> &scylla::statement::prepared_statement::PreparedStatement {
+//         &self.GetPersonById
+//     }
+// }
 
 /// Get many [`super::model::PersonEntity`] by many [`uuid::Uuid`]
 #[select_query(
@@ -53,6 +108,20 @@ pub struct DeletePersonById {
     /// The [`uuid::Uuid`] of the [`super::model::PersonEntity`] to get
     pub id: Uuid,
 }
+
+// fn test() {
+//     use scylla::batch::*;
+
+//     let batch = Batch::new_with_statements(
+//         BatchType::Logged,
+//         vec![
+//             BatchStatement::Query(GenericQuery::<GetPersonById>::query()),
+//             BatchStatement::Query(GenericQuery::<GetPeopleByIds>::query()),
+//             BatchStatement::Query(GenericQuery::<GetPersonByEmail>::query()),
+//             BatchStatement::Query(GenericQuery::<DeletePersonById>::query()),
+//         ]
+//     );
+// }
 
 #[cfg(test)]
 mod test {

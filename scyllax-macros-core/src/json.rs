@@ -1,16 +1,19 @@
+//! Macros for working with JSON data.
 use crate::token_stream_with_error;
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::ItemStruct;
 
-pub(crate) fn expand_attr(_args: TokenStream, input: TokenStream) -> TokenStream {
+/// Expand the `JsonData` attr macro.
+pub fn expand_attr(_args: TokenStream, input: TokenStream) -> TokenStream {
     quote! {
         #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize, scyllax::prelude::JsonData)]
         #input
     }
 }
 
-pub(crate) fn expand(input: TokenStream) -> TokenStream {
+/// Expand the `JsonData` derive macro.
+pub fn expand(input: TokenStream) -> TokenStream {
     let input: ItemStruct = match syn::parse2(input.clone()) {
         Ok(it) => it,
         Err(e) => return token_stream_with_error(input, e),

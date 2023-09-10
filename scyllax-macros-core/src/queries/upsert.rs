@@ -1,3 +1,4 @@
+//! Upsert query macro
 use darling::{ast::NestedMeta, FromMeta};
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
@@ -5,15 +6,20 @@ use syn::{Field, ItemStruct};
 
 use crate::{entity::get_field_name, token_stream_with_error};
 
+/// Options for the `#[upsert_query]` attribute macro.
 #[derive(FromMeta)]
-pub(crate) struct UpsertQueryOptions {
+pub struct UpsertQueryOptions {
+    /// The name of the upsert struct
     pub name: syn::Ident,
+    /// The name of the table to upsert into
     pub table: String,
+    /// The struct that holds the query cache.
+    pub query_cache: syn::Ident,
 }
 
 /// Attribute expand
 /// Just adds the dervie macro to the struct.
-pub(crate) fn expand(args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn expand(args: TokenStream, input: TokenStream) -> TokenStream {
     let attr_args = match NestedMeta::parse_meta_list(args.clone()) {
         Ok(args) => args,
         Err(e) => return darling::Error::from(e).write_errors(),
@@ -51,11 +57,7 @@ pub(crate) fn expand(args: TokenStream, input: TokenStream) -> TokenStream {
 
 // TODO: handle when all keys are pks and we need to use `insert` instead of `update`
 /// Create the implementation for the upsert query
-pub(crate) fn upsert_impl(
-    input: &ItemStruct,
-    opt: &UpsertQueryOptions,
-    pks: &[&Field],
-) -> TokenStream {
+fn upsert_impl(input: &ItemStruct, opt: &UpsertQueryOptions, pks: &[&Field]) -> TokenStream {
     let upsert_struct = &opt.name;
     let upsert_table = &opt.table;
     let struct_ident = &input.ident;
@@ -166,35 +168,42 @@ pub(crate) fn upsert_impl(
     query.pop();
     query.push(';');
 
+    let query_cache = &opt.query_cache;
     quote! {
         #input
 
         #expanded_upsert_struct
 
+        impl scyllax::GenericQuery<#struct_ident> for #upsert_struct {
+            fn query() -> String {
+                #query.to_string()
+            }
+        }
+
         #[scyllax::async_trait]
-        impl scyllax::UpsertQuery<#struct_ident> for #upsert_struct {
-            fn query(
+        impl scyllax::UpsertQuery<#struct_ident, #query_cache> for #upsert_struct {
+            fn create_serialized_values(
                 &self,
-            ) -> Result<(String, scyllax::prelude::SerializedValues), scyllax::BuildUpsertQueryError> {
-                let query = #query.to_string();
+            ) -> Result<scyllax::prelude::SerializedValues, scyllax::BuildUpsertQueryError> {
                 let mut variables = scylla::frame::value::SerializedValues::new();
 
                 #(#set_sv_push)*
                 #(#where_sv_push)*
 
-                Ok((query, variables))
+                Ok(variables)
             }
 
 
-            async fn execute(self, db: &scyllax::Executor) -> Result<scyllax::QueryResult, scyllax::ScyllaxError> {
-                let (query, values) = Self::query(&self)?;
+            async fn execute(self, db: &scyllax::Executor<#query_cache>) -> Result<scyllax::QueryResult, scyllax::ScyllaxError> {
+                let statement = db.queries.get_statement::<#struct_ident>();
+                let values = Self::create_serialized_values(&self)?;
 
                 tracing::debug! {
                     query = ?query,
                     values = values.len(),
                     "executing upsert"
                 };
-                db.session.execute(query, values).await.map_err(|e| e.into())
+                db.session.execute(statement, values).await.map_err(|e| e.into())
             }
         }
     }

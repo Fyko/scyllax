@@ -69,16 +69,11 @@ pub trait EntityExt<T: ImplValueList + FromRow> {
 pub trait SelectQuery<
     T: EntityExt<T> + ImplValueList + FromRow,
     R: Clone + std::fmt::Debug + Send + Sync,
+    Q: Queries,
 >
 {
-    /// Returns the query as a string
-    fn query() -> String;
-
-    /// Prepares the query
-    async fn prepare(db: &Executor) -> Result<PreparedStatement, QueryError>;
-
     /// Executes the query
-    async fn execute(self, db: &Executor) -> Result<QueryResult, QueryError>;
+    async fn execute(self, db: &Executor<Q>) -> Result<QueryResult, QueryError>;
 
     /// Parses the response from the database
     async fn parse_response(res: QueryResult) -> Result<R, ScyllaxError>;
@@ -86,27 +81,51 @@ pub trait SelectQuery<
 
 /// The trait that's implemented on update/insert queryes
 #[async_trait]
-pub trait UpsertQuery<T: EntityExt<T> + ImplValueList + FromRow> {
+pub trait UpsertQuery<T: EntityExt<T> + ImplValueList + FromRow, Q: Queries> {
     /// Returns the query as a string
-    fn query(
+    fn create_serialized_values(
         &self,
-    ) -> Result<(String, scylla::frame::value::SerializedValues), BuildUpsertQueryError>;
+    ) -> Result<scylla::frame::value::SerializedValues, BuildUpsertQueryError>;
 
     /// Executes the query
-    async fn execute(self, db: &Executor) -> Result<QueryResult, ScyllaxError>;
+    async fn execute(self, db: &Executor<Q>) -> Result<QueryResult, ScyllaxError>;
 }
 
 /// The trait that's implemented on delete queries
 // R is the return type of the query
 // It can be either Option<T> or Vec<T>
 #[async_trait]
-pub trait DeleteQuery<T: EntityExt<T> + ImplValueList + FromRow> {
+pub trait DeleteQuery<T: EntityExt<T> + ImplValueList + FromRow, Q: Queries> {
+    /// Executes the query
+    async fn execute(self, db: &Executor<Q>) -> Result<QueryResult, QueryError>;
+}
+
+/// Applied to a superstruct of prepared statements.
+pub trait GetPreparedStatement<T> {
+    /// Returns the prepared statement
+    fn get_prepared_statement(&self) -> &PreparedStatement;
+}
+
+/// A generic query that implements `query`.
+pub trait GenericQuery<T: EntityExt<T> + ImplValueList + FromRow> {
     /// Returns the query as a string
     fn query() -> String;
+}
 
-    /// Prepares the query
-    async fn prepare(db: &Executor) -> Result<PreparedStatement, QueryError>;
+/// A superstruct of all the queries
+#[async_trait]
+pub trait Queries
+where
+    Self: Sized,
+{
+    /// Creates a new instance
+    async fn new(session: &scylla::Session) -> Result<Self, ScyllaxError>;
 
-    /// Executes the query
-    async fn execute(self, db: &Executor) -> Result<QueryResult, QueryError>;
+    #[doc = "Get a prepared statement."]
+    fn get<T>(&self) -> &scylla::statement::prepared_statement::PreparedStatement
+    where
+        Self: GetPreparedStatement<T>,
+    {
+        <Self as GetPreparedStatement<T>>::get_prepared_statement(self)
+    }
 }

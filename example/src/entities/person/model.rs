@@ -1,3 +1,4 @@
+use super::queries::PersonQueries;
 use scyllax::prelude::*;
 
 /// Represents data from a person
@@ -10,7 +11,7 @@ pub struct PersonData {
 
 /// Represents a person in the database
 #[entity]
-#[upsert_query(table = "person", name = UpsertPerson)]
+// #[upsert_query(table = "person", name = UpsertPerson, query_cache = PersonQueries)]
 pub struct PersonEntity {
     /// The id of the person
     #[pk]

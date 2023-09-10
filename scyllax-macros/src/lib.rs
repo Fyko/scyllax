@@ -1,15 +1,6 @@
 //! Scyllax macros. See the scyllax for more information.
 use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TokenStream2;
-
-mod entity;
-mod json;
-mod queries;
-
-pub(crate) fn token_stream_with_error(mut tokens: TokenStream2, error: syn::Error) -> TokenStream2 {
-    tokens.extend(error.into_compile_error());
-    tokens
-}
+use scyllax_macros_core::*;
 
 /// Apply this attribute to a struct to generate a select query.
 /// ## Single result
@@ -106,4 +97,10 @@ pub fn json_derive(input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn json_data(args: TokenStream, input: TokenStream) -> TokenStream {
     json::expand_attr(args.into(), input.into()).into()
+}
+
+/// Create a superstruct of all queries.
+#[proc_macro]
+pub fn prepare_queries(input: TokenStream) -> TokenStream {
+    queries::prepare::expand(input.into()).into()
 }
