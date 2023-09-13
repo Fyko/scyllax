@@ -161,8 +161,11 @@ pub(crate) fn upsert_impl(
     query.pop();
     query.push_str(" where");
     for (col, named_value) in where_columns {
-        query.push_str(&format!(" {col} = :{named_value},"));
+        query.push_str(&format!(" {col} = :{named_value} and"));
     }
+    query.pop();
+    query.pop();
+    query.pop();
     query.pop();
     query.push(';');
 
