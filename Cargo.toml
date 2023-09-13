@@ -3,7 +3,7 @@ members = ["example", "scyllax-macros"]
 resolver = "2"
 
 [workspace.package]
-version = "0.1.4-alpha"
+version = "0.1.5-alpha"
 license = "MIT OR Apache-2.0"
 edition = "2021"
 repository = "https://github.com/trufflehq/scyllax"
@@ -33,13 +33,13 @@ getrandom = "0.2"
 mac_address = "1"
 once_cell = "1"
 scylla = { workspace = true }
-scyllax-macros = { version = "0.1.4-alpha", path = "./scyllax-macros" }
+scyllax-macros = { version = "0.1.5-alpha", path = "./scyllax-macros" }
 thiserror = "1"
 tracing = { workspace = true }
 uuid = { workspace = true }
 
 [workspace.dependencies]
-scyllax-macros = { verison = "0.1.4-alpha", path = "scyllax-macros" }
+scyllax-macros = { verison = "0.1.5-alpha", path = "scyllax-macros" }
 anyhow = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json", "tracing-log", "parking_lot"] }
