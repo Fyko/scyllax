@@ -1,6 +1,6 @@
 //! Example
 use entities::person::{
-    model::{PersonData, UpsertPerson},
+    model::{PersonData, PersonKind, UpsertPerson},
     queries::{load, DeletePersonById, GetPeopleByIds, GetPersonByEmail, GetPersonById},
 };
 use scyllax::prelude::*;
@@ -65,6 +65,7 @@ async fn main() -> anyhow::Result<()> {
         data: MaybeUnset::Set(Some(PersonData {
             stripe_id: Some("stripe_id".to_string()),
         })),
+        kind: MaybeUnset::Set(PersonKind::Parent),
         created_at: MaybeUnset::Unset,
     };
     let res = executor.execute_upsert(query).await?;

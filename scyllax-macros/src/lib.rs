@@ -3,6 +3,7 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 
 mod entity;
+mod r#enum;
 mod json;
 mod queries;
 
@@ -106,4 +107,21 @@ pub fn json_derive(input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn json_data(args: TokenStream, input: TokenStream) -> TokenStream {
     json::expand_attr(args.into(), input.into()).into()
+}
+
+/// Implements
+/// * [`scylla::frame::value::Value`] and
+/// * [`scylla::cql_to_rust::FromCqlVal`]
+/// * [`TryFrom<i32>`]
+///
+/// for an enum. See [`int_enum`] for more.
+#[proc_macro_derive(IntEnum, attributes(rename))]
+pub fn int_enum_derive(input: TokenStream) -> TokenStream {
+    r#enum::expand(input.into()).into()
+}
+
+/// Sets up a scylla-and-protobuf compatible enum.
+#[proc_macro_attribute]
+pub fn int_enum(args: TokenStream, input: TokenStream) -> TokenStream {
+    r#enum::expand_attr(args.into(), input.into()).into()
 }

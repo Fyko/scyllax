@@ -8,6 +8,17 @@ pub struct PersonData {
     pub stripe_id: Option<String>,
 }
 
+/// Represents the kind of person
+#[int_enum]
+pub enum PersonKind {
+    /// The person is a staff member
+    Staff = 0,
+    /// The person is a parent
+    Parent = 1,
+    /// The person is a student
+    Student = 2,
+}
+
 /// Represents a person in the database
 #[entity]
 #[upsert_query(table = "person", name = UpsertPerson)]
@@ -21,6 +32,8 @@ pub struct PersonEntity {
     pub age: Option<i32>,
     /// Other data from the person
     pub data: Option<PersonData>,
+    /// The kind of person
+    pub kind: PersonKind,
     /// The date the person was created
     #[rename("createdAt")]
     pub created_at: i64,
@@ -57,6 +70,7 @@ mod test {
             id: v1_uuid(),
             email: MaybeUnset::Set("foo21@scyllax.local".to_string()),
             age: MaybeUnset::Unset,
+            kind: MaybeUnset::Set(PersonKind::Parent),
             data: MaybeUnset::Set(Some(PersonData {
                 stripe_id: Some("stripe_id".to_string()),
             })),
