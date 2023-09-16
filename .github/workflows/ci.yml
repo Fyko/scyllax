@@ -48,7 +48,7 @@ jobs:
         run: cargo make format-ci
 
       - name: Run Clippy
-        run: cargo make lint
+        run: cargo make lint-ci
 
       - name: Build
         run: cargo build --release --all-features
