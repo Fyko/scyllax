@@ -74,7 +74,7 @@ pub fn upsert_query(args: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 /// Implements [`scyllax::EntityExt`](scyllax::EntityExt) for the struct.
-#[proc_macro_derive(Entity, attributes(rename, pk))]
+#[proc_macro_derive(Entity, attributes(rename, pk, counter))]
 pub fn entity_derive(input: TokenStream) -> TokenStream {
     entity::expand(input.into()).into()
 }

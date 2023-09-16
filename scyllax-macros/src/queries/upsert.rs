@@ -36,6 +36,36 @@ pub(crate) fn expand(args: TokenStream, input: TokenStream) -> TokenStream {
         .filter(|f| f.attrs.iter().any(|a| a.path().is_ident("pk")))
         .collect::<Vec<_>>();
 
+    let counters = input_clone
+        .fields
+        .iter()
+        .filter(|f| f.attrs.iter().any(|a| a.path().is_ident("counter")))
+        .collect::<Vec<_>>();
+    // require the type of every counter be i64
+    for counter in &counters {
+        if let syn::Type::Path(path) = &counter.ty {
+            if let Some(ident) = path.path.get_ident() {
+                if ident != "i64" {
+                    return token_stream_with_error(
+                        input.into_token_stream(),
+                        syn::Error::new_spanned(
+                            counter.into_token_stream(),
+                            "Counter fields must be of type i64",
+                        ),
+                    );
+                }
+            }
+        } else {
+            return token_stream_with_error(
+                input.into_token_stream(),
+                syn::Error::new_spanned(
+                    counter.into_token_stream(),
+                    "Counter fields must be of type i64",
+                ),
+            );
+        }
+    }
+
     if pks.is_empty() {
         return token_stream_with_error(
             input.clone().into_token_stream(),
@@ -46,7 +76,7 @@ pub(crate) fn expand(args: TokenStream, input: TokenStream) -> TokenStream {
         );
     }
 
-    upsert_impl(&input, &args, &pks)
+    upsert_impl(&input, &args, &pks, &counters)
 }
 
 // TODO: handle when all keys are pks and we need to use `insert` instead of `update`
@@ -55,6 +85,7 @@ pub(crate) fn upsert_impl(
     input: &ItemStruct,
     opt: &UpsertQueryOptions,
     pks: &[&Field],
+    counters: &[&Field],
 ) -> TokenStream {
     let upsert_struct = &opt.name;
     let upsert_table = &opt.table;
@@ -109,7 +140,7 @@ pub(crate) fn upsert_impl(
 
     // SET clauses
     // expanded variables will loop over every field that isn't Pk
-    let (set_columns, set_sv_push) = fields
+    let (set_clauses, set_sv_push) = fields
         .iter()
         // filter out pks
         .filter(|f| !pks.contains(f))
@@ -119,8 +150,14 @@ pub(crate) fn upsert_impl(
             let errors = error_switchback(f);
             let ident_string = ident.to_string();
 
+            let query = if counters.contains(f) {
+                format!("{col} = {col} + :{ident_string}")
+            } else {
+                format!("{col} = :{ident_string}")
+            };
+
             (
-                (col.clone(), ident_string.clone()),
+                query,
                 quote! {
                     match variables.add_named_value(#ident_string, &self.#ident) {
                         Ok(_) => (),
@@ -132,7 +169,7 @@ pub(crate) fn upsert_impl(
         .unzip::<_, _, Vec<_>, Vec<_>>();
 
     // WHERE clauses
-    let (where_columns, where_sv_push) = fields
+    let (where_clauses, where_sv_push) = fields
         .iter()
         // filter out pks
         .filter(|f| pks.contains(f))
@@ -140,12 +177,12 @@ pub(crate) fn upsert_impl(
             let ident = &f.ident.clone().unwrap();
             let col = get_field_name(f);
             let errors = error_switchback(f);
-            let ident_string = ident.to_string();
+            let named_var = ident.to_string();
 
             (
-                (col.clone(), ident_string.clone()),
+                (col.clone(), named_var.clone()),
                 quote! {
-                    match variables.add_named_value(#ident_string, &self.#ident) {
+                    match variables.add_named_value(#named_var, &self.#ident) {
                         Ok(_) => (),
                         #errors
                     };
@@ -154,20 +191,9 @@ pub(crate) fn upsert_impl(
         })
         .unzip::<_, _, Vec<_>, Vec<_>>();
 
-    let mut query = format!("update {upsert_table} set");
-    for (col, named_value) in set_columns {
-        query.push_str(&format!(" {col} = :{named_value},"));
-    }
-    query.pop();
-    query.push_str(" where");
-    for (col, named_value) in where_columns {
-        query.push_str(&format!(" {col} = :{named_value} and"));
-    }
-    query.pop();
-    query.pop();
-    query.pop();
-    query.pop();
-    query.push(';');
+    // if there are no set clauses, then we need to do an insert
+    // because we can't do an update with no set clauses
+    let query = build_query(upsert_table, set_clauses, where_clauses);
 
     quote! {
         #input
@@ -203,6 +229,43 @@ pub(crate) fn upsert_impl(
     }
 }
 
+fn build_query(
+    table: &String,
+    set_clauses: Vec<String>,
+    where_clauses: Vec<(String, String)>,
+) -> String {
+    if set_clauses.is_empty() {
+        let mut query = format!("insert into {table}");
+        let (cols, named_var) = where_clauses.into_iter().unzip::<_, _, Vec<_>, Vec<_>>();
+        let cols = cols.join(", ");
+        let named_var = named_var
+            .into_iter()
+            .map(|var| format!(":{var}"))
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        query.push_str(&format!(" ({cols}) values ({named_var});"));
+
+        query
+    } else {
+        let mut query = format!("update {table} set ");
+        let query_set = set_clauses.join(", ");
+        query.push_str(&query_set);
+
+        query.push_str(" where ");
+        let query_where = where_clauses
+            .into_iter()
+            .map(|(col, ident_string)| format!("{col} = :{ident_string}"))
+            .collect::<Vec<_>>()
+            .join(" and ");
+        query.push_str(&query_where);
+
+        query.push(';');
+
+        query
+    }
+}
+
 fn error_switchback(f: &&syn::Field) -> TokenStream {
     let ident = &f.ident;
 
@@ -225,5 +288,52 @@ fn error_switchback(f: &&syn::Field) -> TokenStream {
                 field: stringify!(#ident).to_string(),
             })
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::build_query;
+
+    fn get_set_clauses() -> Vec<String> {
+        vec![
+            "name = :name",
+            "email = :email",
+            "\"createdAt\" = :created_at",
+        ]
+        .into_iter()
+        .map(|x| x.to_string())
+        .collect::<Vec<_>>()
+    }
+
+    fn get_where_clauses() -> Vec<(String, String)> {
+        vec![("id", "id"), (r#""orgId""#, "org_id")]
+            .into_iter()
+            .map(|(x, y)| (x.to_string(), y.to_string()))
+            .collect::<Vec<_>>()
+    }
+
+    #[test]
+    fn test_update() {
+        let query = build_query(
+            &"person".to_string(),
+            get_set_clauses(),
+            get_where_clauses(),
+        );
+
+        assert_eq!(
+            query,
+            "update person set name = :name, email = :email, \"createdAt\" = :created_at where id = :id and \"orgId\" = :org_id;",
+        );
+    }
+
+    #[test]
+    fn test_insert() {
+        let query = build_query(&"person".to_string(), vec![], get_where_clauses());
+
+        assert_eq!(
+            query,
+            "insert into person (id, \"orgId\") values (:id, :org_id);",
+        );
     }
 }

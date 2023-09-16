@@ -59,6 +59,7 @@ mod test {
                 "email".to_string(),
                 "age".to_string(),
                 "data".to_string(),
+                "kind".to_string(),
                 "\"createdAt\"".to_string()
             ]
         );
@@ -81,7 +82,7 @@ mod test {
 
         assert_eq!(
             query,
-            r#"update person set email = :email, age = :age, data = :data, "createdAt" = :created_at where id = :id;"#
+            r#"update person set email = :email, age = :age, data = :data, kind = :kind, "createdAt" = :created_at where id = :id;"#
         );
 
         let mut result_values = SerializedValues::new();
@@ -93,6 +94,9 @@ mod test {
             .expect("failed to add value");
         result_values
             .add_named_value("data", &upsert.data)
+            .expect("failed to add value");
+        result_values
+            .add_named_value("kind", &upsert.kind)
             .expect("failed to add value");
         result_values
             .add_named_value("created_at", &upsert.created_at)

@@ -42,6 +42,21 @@ args = [
     "--workspace",
 ]
 
+[tasks.lint-ci]
+install_crate = "clippy"
+command = "cargo"
+args = [
+    "clippy",
+    "--tests",
+    "--examples",
+    "--all-targets",
+    "--all-features",
+    "--workspace",
+    "--",
+    "-D",
+    "warnings",
+]
+
 [tasks.format]
 install_crate = "rustfmt"
 command = "cargo"
@@ -69,7 +84,7 @@ args = ["nextest", "run", "--workspace"]
 [tasks.cov]
 command = "cargo"
 env = { "RUN_MODE" = "test" }
-args = ["llvm-cov", "nextest", "--workspace", "--exclude", "scyllax-macros", "${@}"]
+args = ["llvm-cov", "nextest", "--workspace", "--ignore-filename-regex", "src/main.rs", "${@}"]
 
 [tasks.cov-ci]
 command = "cargo"

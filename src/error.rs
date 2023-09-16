@@ -49,3 +49,53 @@ pub enum BuildUpsertQueryError {
         field: String,
     },
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_build_upsert_query_error() {
+        assert_eq!(
+            "Value for foo is too big",
+            BuildUpsertQueryError::ValueTooBig {
+                field: "foo".to_string()
+            }
+            .to_string()
+        );
+
+        assert_eq!(
+            "Failed to serialize value for foo",
+            BuildUpsertQueryError::ParseError {
+                field: "foo".to_string()
+            }
+            .to_string()
+        );
+
+        assert_eq!(
+            "Too many values when adding foo",
+            BuildUpsertQueryError::TooManyValues {
+                field: "foo".to_string()
+            }
+            .to_string()
+        );
+
+        assert_eq!(
+            "Can't mix named and unnamed values",
+            BuildUpsertQueryError::MixingNamedAndNotNamedValues.to_string()
+        );
+    }
+
+    #[test]
+    fn test_scyllax_error() {
+        assert_eq!("No rows found", ScyllaxError::NoRowsFound.to_string());
+
+        assert_eq!(
+            "Failed to build query: Value for foo is too big",
+            ScyllaxError::BuildUpsertQueryError(BuildUpsertQueryError::ValueTooBig {
+                field: "foo".to_string()
+            })
+            .to_string()
+        );
+    }
+}

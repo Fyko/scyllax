@@ -10,6 +10,7 @@ create table person (
 	email text,
 	age int,
 	data text, -- json type
+	kind int,
 	-- camel case for the sake of backwards compat
 	"createdAt" timestamp
 );
@@ -20,23 +21,15 @@ create materialized view person_by_email as
   where email is not null and id is not null
   primary key (email, id);
 
-insert into person(id, email, age, data, "createdAt") values (e01e84d6-414c-11ee-be56-0242ac120002, 'foo1@scyllax.local', 25, "{\"foo\": \"bar\"}", toUnixTimestamp(now()));
-insert into person(id, email, age, "createdAt") values (e01e880a-414c-11ee-be56-0242ac120002, 'foo2@scyllax.local', 25, toUnixTimestamp(now()));
-insert into person(id, email, age, "createdAt") values (e01e89c2-414c-11ee-be56-0242ac120002, 'foo3@scyllax.local', 25, toUnixTimestamp(now()));
-insert into person(id, email, age, "createdAt") values (e01e8b2a-414c-11ee-be56-0242ac120002, 'foo4@scyllax.local', 25, toUnixTimestamp(now()));
-insert into person(id, email, age, "createdAt") values (e01e8db4-414c-11ee-be56-0242ac120002, 'foo5@scyllax.local', 25, toUnixTimestamp(now()));
-insert into person(id, email, age, "createdAt") values (e01e911a-414c-11ee-be56-0242ac120002, 'foo6@scyllax.local', 25, toUnixTimestamp(now()));
-insert into person(id, email, age, "createdAt") values (e01e9354-414c-11ee-be56-0242ac120002, 'foo7@scyllax.local', 25, toUnixTimestamp(now()));
-insert into person(id, email, "createdAt") values (e01e94e4-414c-11ee-be56-0242ac120002, 'foo8@scyllax.local', toUnixTimestamp(now()));
-insert into person(id, email, age, "createdAt") values (e01e9854-414c-11ee-be56-0242ac120002, 'foo9@scyllax.local', 25, toUnixTimestamp(now()));
-insert into person(id, email, "createdAt") values (e01e99ee-414c-11ee-be56-0242ac120002, 'foo10@scyllax.local', toUnixTimestamp(now()));
-insert into person(id, email, age, "createdAt") values (e01e9b60-414c-11ee-be56-0242ac120002, 'foo11@scyllax.local', 48, toUnixTimestamp(now()));
-insert into person(id, email, "createdAt") values (e01e9cc8-414c-11ee-be56-0242ac120002, 'foo12@scyllax.local', toUnixTimestamp(now()));
-insert into person(id, email, age, "createdAt") values (e01e9e3a-414c-11ee-be56-0242ac120002, 'foo13@scyllax.local', 22, toUnixTimestamp(now()));
-insert into person(id, email, "createdAt") values (e01ea1d2-414c-11ee-be56-0242ac120002, 'foo14@scyllax.local', toUnixTimestamp(now()));
-insert into person(id, email, "createdAt") values (e01ea380-414c-11ee-be56-0242ac120002, 'foo15@scyllax.local', toUnixTimestamp(now()));
-insert into person(id, email, age, "createdAt") values (e01ea4f2-414c-11ee-be56-0242ac120002, 'foo16@scyllax.local', 26, toUnixTimestamp(now()));
-insert into person(id, email, age, "createdAt") values (e01ea682-414c-11ee-be56-0242ac120002, 'foo17@scyllax.local', 18, toUnixTimestamp(now()));
-insert into person(id, email, "createdAt") values (e01ea81c-414c-11ee-be56-0242ac120002, 'foo18@scyllax.local', toUnixTimestamp(now()));
-insert into person(id, email, age, "createdAt") values (e01eab14-414c-11ee-be56-0242ac120002, 'foo19@scyllax.local', 28, toUnixTimestamp(now()));
-insert into person(id, email, "createdAt") values (e01eaca4-414c-11ee-be56-0242ac120002, 'foo20@scyllax.local', toUnixTimestamp(now()));
+insert into person(id, email, age, data, kind, "createdAt") values (e01e84d6-414c-11ee-be56-0242ac120002, 'foo1@scyllax.local', 25, '{"foo":"bar"}', 0, toUnixTimestamp(now()));
+insert into person(id, email, age, kind, "createdAt") values (e01e880a-414c-11ee-be56-0242ac120002, 'foo2@scyllax.local', 25, 1, toUnixTimestamp(now()));
+
+
+create table person_login (
+	id timeuuid,
+	person_id uuid,
+	count counter,
+	primary key ((id), person_id)
+);
+
+update person_login set count = count + 0 where id = 42dcfcde-5420-11ee-8c99-0242ac120002 and person_id = e01e84d6-414c-11ee-be56-0242ac120002;

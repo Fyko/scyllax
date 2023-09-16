@@ -20,5 +20,10 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 uuid = { workspace = true }
 
+[features]
+default = ["integration"]
+integration = []
+
+
 [dev-dependencies]
 pretty_assertions = "1"
