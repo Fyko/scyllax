@@ -80,8 +80,8 @@ jobs:
         shell: bash
         env:
           TARGET: ${{ matrix.job.target }}
-          PROJECT_NAME: scyllax-cli
-          PACKAGE_NAME: scyllax-cli
+          PROJECT_NAME: scyllax
+          PACKAGE_NAME: scyllax
           OS_NAME: ${{ matrix.job.os }}
         run: ./.github/before_deploy.sh
 
@@ -89,7 +89,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            scyllax-cli-*-${{ matrix.job.target }}.*
-            scyllax-cli*.deb
+            scyllax-*-${{ matrix.job.target }}.*
+            scyllax*.deb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
