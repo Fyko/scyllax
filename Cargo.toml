@@ -1,5 +1,5 @@
 [workspace]
-members = ["example", "scyllax-macros"]
+members = ["example", "scyllax-cli", "scyllax-macros"]
 resolver = "2"
 
 [workspace.package]
