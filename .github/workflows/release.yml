@@ -9,7 +9,7 @@ on:
 
 jobs:
   publish_cli:
-    name: Publishing CLI for ${{ matrix.os }}
+    name: Publishing CLI for ${{ matrix.job.os }}
     runs-on: ${{ matrix.job.os }}
     strategy:
       matrix:
@@ -83,7 +83,7 @@ jobs:
           PROJECT_NAME: scyllax-cli
           PACKAGE_NAME: scyllax-cli
           OS_NAME: ${{ matrix.job.os }}
-        run: .github/before_deploy.sh
+        run: ./.github/before_deploy.sh
 
       - name: Releasing assets
         uses: softprops/action-gh-release@v1
