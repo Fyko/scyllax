@@ -30,5 +30,5 @@ serde = { version = "1.0.188", features = ["derive"] }
 glob = "0.3.1"
 tracing = { workspace = true }
 filetime = "0.2.22"
-time = { version = "0.3.28", features = ["formatting"] }
+time = { version = "0.3.29", features = ["formatting"] }
 sha2 = "0.10.7"
