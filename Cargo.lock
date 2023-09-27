@@ -468,7 +468,7 @@ dependencies = [
 
 [[package]]
 name = "example"
-version = "0.1.7-alpha"
+version = "0.1.8-alpha"
 dependencies = [
  "anyhow",
  "pretty_assertions",
@@ -1320,7 +1320,7 @@ dependencies = [
 
 [[package]]
 name = "scyllax"
-version = "0.1.7-alpha"
+version = "0.1.8-alpha"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1336,7 +1336,7 @@ dependencies = [
 
 [[package]]
 name = "scyllax-cli"
-version = "0.1.7-alpha"
+version = "0.1.8-alpha"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1361,7 +1361,7 @@ dependencies = [
 
 [[package]]
 name = "scyllax-macros"
-version = "0.1.7-alpha"
+version = "0.1.8-alpha"
 dependencies = [
  "anyhow",
  "darling",
@@ -1372,7 +1372,7 @@ dependencies = [
 
 [[package]]
 name = "scyllax-parser"
-version = "0.1.7-alpha"
+version = "0.1.8-alpha"
 dependencies = [
  "nom",
  "pretty_assertions",
