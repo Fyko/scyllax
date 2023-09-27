@@ -6,12 +6,30 @@ pub mod select;
 pub mod r#where;
 
 pub use common::{Column, Value, Variable};
+pub use delete::DeleteQuery;
+pub use r#where::{ComparisonOperator, WhereClause};
+pub use select::SelectQuery;
 
-use delete::DeleteQuery;
 use nom::{error::Error, Err, IResult};
-use select::SelectQuery;
 
 /// Represents a query
+/// ```rust
+/// use scyllax_parser::{Column, Query, SelectQuery};
+///
+/// let query = Query::try_from("select id, name from person");
+/// assert_eq!(
+///     query,
+///     Ok(Query::Select(SelectQuery {
+///         table: "person".to_string(),
+///         columns: vec![
+///             Column::Identifier("id".to_string()),
+///             Column::Identifier("name".to_string()),
+///         ],
+///         condition: vec![],
+///         limit: None,
+///     }))
+/// );
+/// ```
 #[derive(Debug, PartialEq)]
 pub enum Query {
     /// A select query

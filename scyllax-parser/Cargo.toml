@@ -1,14 +1,15 @@
 [package]
 name = "scyllax-parser"
+description = "A parser for CQL queries"
 version.workspace = true
 license.workspace = true
 edition.workspace = true
 repository.workspace = true
 keywords.workspace = true
-categories.workspace = true
+categories = ["database", "parser-implementations"]
 authors.workspace = true
 homepage.workspace = true
-readme.workspace = true
+readme = 'crates.md'
 
 [dependencies]
 nom = "7.1.3"

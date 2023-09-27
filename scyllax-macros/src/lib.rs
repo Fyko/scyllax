@@ -1,4 +1,6 @@
-//! Scyllax macros. See the scyllax for more information.
+//! Macros supporting scyllax.
+//!
+//! See the [scyllax docs](https://docs.rs/scyllax) for more information.
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 
