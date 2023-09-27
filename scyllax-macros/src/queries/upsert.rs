@@ -45,12 +45,12 @@ pub(crate) fn expand(args: TokenStream, input: TokenStream) -> TokenStream {
     for counter in &counters {
         if let syn::Type::Path(path) = &counter.ty {
             if let Some(ident) = path.path.get_ident() {
-                if ident != "i64" {
+                if ident != "scylla::frame::value::Counter" {
                     return token_stream_with_error(
                         input.into_token_stream(),
                         syn::Error::new_spanned(
                             counter.into_token_stream(),
-                            "Counter fields must be of type i64",
+                            "Counter fields must be of type `scylla::frame::value::Counter`",
                         ),
                     );
                 }
@@ -60,7 +60,7 @@ pub(crate) fn expand(args: TokenStream, input: TokenStream) -> TokenStream {
                 input.into_token_stream(),
                 syn::Error::new_spanned(
                     counter.into_token_stream(),
-                    "Counter fields must be of type i64",
+                    "Counter fields must be of type `scylla::frame::value::Counter",
                 ),
             );
         }

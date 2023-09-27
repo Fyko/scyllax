@@ -12,7 +12,7 @@ pub struct PersonLoginEntity {
     pub person_id: uuid::Uuid,
     /// The number of times the person has logged in
     #[counter]
-    pub count: i64,
+    pub count: scylla::frame::value::Counter,
 }
 
 #[cfg(test)]

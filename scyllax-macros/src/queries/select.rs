@@ -138,14 +138,16 @@ pub(crate) fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
                 #query.replace("*", &#inner_entity_type::keys().join(", "))
             }
 
+            #[tracing::instrument(skip(db))]
             async fn prepare(db: &Executor) -> Result<scylla::prepared_statement::PreparedStatement, scylla::transport::errors::QueryError> {
                 tracing::debug!("preparing query {}", stringify!(#struct_ident));
                 db.session.add_prepared_statement(&scylla::query::Query::new(Self::query())).await
             }
 
+            #[tracing::instrument(skip(db))]
             async fn execute(self, db: &scyllax::Executor) -> anyhow::Result<scylla::QueryResult, scylla::transport::errors::QueryError> {
                 let query = Self::query();
-                tracing::debug!{
+                tracing::debug! {
                     query,
                     "executing select"
                 };
@@ -153,6 +155,7 @@ pub(crate) fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
                 db.session.execute(query, self).await
             }
 
+            #[tracing::instrument(skip(res))]
             async fn parse_response(res: scylla::QueryResult) -> Result<#return_type, scyllax::ScyllaxError> {
                 #parser
             }

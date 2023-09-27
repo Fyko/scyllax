@@ -1,6 +1,6 @@
 use anyhow::Context;
 use console::style;
-use scylla::frame::value::Timestamp;
+use scylla::{frame::value::Timestamp, query::Query, statement::SerialConsistency};
 use scyllax::{executor::create_session, Executor};
 use sha2::{Digest, Sha384};
 use std::fs::{self, File};
@@ -118,19 +118,45 @@ pub async fn run(
         let mut up_path = path.clone();
         up_path.push(MigrationType::Up.name());
 
-        let up_file = fs::read_to_string(&up_path).context("Unable to read up file")?;
+        let contents = fs::read_to_string(&up_path).context("Unable to read up file")?;
+
+        // the file contents can hold multiple statements separated by semicolons and newlines
+        // we need to split them where there's a while line that's just a linebreak (\n)
+        // and then execute each statement separately
+        let statements = contents.split("\n\n").collect::<Vec<_>>();
+        let session = executor.session.get_session();
+
+        println!(
+            "Applying migration {}...",
+            style(&migration_folder.to_string()).cyan(),
+        );
 
         let start = std::time::Instant::now();
-        executor.session.execute(&*up_file, ()).await?;
-        let end = std::time::Instant::elapsed(&start);
+        let count = statements.len();
+        for (i, statement) in statements.into_iter().enumerate() {
+            let mut prepared_query = Query::new(statement);
+            prepared_query.set_tracing(true);
+            prepared_query.set_serial_consistency(Some(SerialConsistency::LocalSerial));
 
+            let start = std::time::Instant::now();
+            session.query(prepared_query.clone(), ()).await?;
+            let end = std::time::Instant::elapsed(&start);
+
+            println!(
+                "Applied statement {} ({}) ({})",
+                style(i).green(),
+                style(format!("of {count}")).dim(),
+                style(format!("{}ms", end.as_millis())).dim()
+            );
+        }
+        let end = std::time::Instant::elapsed(&start);
         println!(
             "Applied migration {} ({})",
             style(&migration_folder.to_string()).cyan(),
             style(format!("{}ms", end.as_millis())).dim()
         );
 
-        let checksum: Vec<u8> = Vec::from(Sha384::digest(up_file.as_bytes()).as_slice());
+        let checksum: Vec<u8> = Vec::from(Sha384::digest(contents.as_bytes()).as_slice());
 
         let upsert_row = UpsertMigration {
             bucket: 0,
@@ -199,10 +225,33 @@ pub async fn revert(migration_source: &str, connect_opts: ConnectOpts) -> anyhow
     let mut up_path = path.clone();
     up_path.push(MigrationType::Up.name());
 
-    let up_file = fs::read_to_string(&up_path).context("Unable to read up file")?;
+    let contents = fs::read_to_string(&up_path).context("Unable to read up file")?;
+    let statements = contents.split("\n\n").collect::<Vec<_>>();
+    let session = executor.session.get_session();
+
+    println!(
+        "Reverting migration {}...",
+        style(&migration.to_string()).cyan(),
+    );
 
     let start = std::time::Instant::now();
-    executor.session.execute(&*up_file, ()).await?;
+    let count = statements.len();
+    for (i, statement) in statements.into_iter().enumerate() {
+        let mut prepared_query = Query::new(statement);
+        prepared_query.set_tracing(true);
+        prepared_query.set_serial_consistency(Some(SerialConsistency::LocalSerial));
+
+        let start = std::time::Instant::now();
+        session.query(prepared_query.clone(), ()).await?;
+        let end = std::time::Instant::elapsed(&start);
+
+        println!(
+            "Reverted statement {} ({}) ({})",
+            style(i).green(),
+            style(format!("of {count}")).dim(),
+            style(format!("{}ms", end.as_millis())).dim()
+        );
+    }
     let end = std::time::Instant::elapsed(&start);
 
     println!(

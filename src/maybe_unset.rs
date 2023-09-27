@@ -1,7 +1,7 @@
 //! A wrapper around a value that can be unincluded but not overwritten/made null
 use scylla::{
     _macro_internal::{Value, ValueTooBig},
-    frame::value::Unset,
+    frame::value::{Counter, Unset},
 };
 
 /// A wrapper around a value that can be unincluded but not overwritten/made null
@@ -36,6 +36,13 @@ impl<V: Value> From<Option<V>> for MaybeUnset<V> {
             Some(v) => MaybeUnset::Set(v),
             None => MaybeUnset::Unset,
         }
+    }
+}
+
+// MaybeUnset<scylla_cql::frame::value::Counter>: From<i64>
+impl From<i64> for MaybeUnset<Counter> {
+    fn from(v: i64) -> Self {
+        MaybeUnset::Set(Counter(v))
     }
 }
 
