@@ -1,0 +1,49 @@
+name: Deploy Book
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'book/**'
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Website
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install mdbook
+        uses: taiki-e/install-action@mdbook
+
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v3
+
+      - name: Run Clippy
+        working-directory: book
+        run: mdbook build
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact
+        with:
+          path: book/book
+
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2

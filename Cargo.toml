@@ -7,7 +7,7 @@ version = "0.1.8-alpha"
 license = "MIT OR Apache-2.0"
 edition = "2021"
 repository = "https://github.com/trufflehq/scyllax"
-keywords = ["scylla", "cassandra", "orm", "sqlx", "trufflehq", "truffle", "youtube", "twitch"]
+keywords = ["scylla", "cassandra", "orm", "sqlx", "truffle"]
 categories = ["database"]
 authors = [
     "Carter Himmel <carter@truffle.vip>"

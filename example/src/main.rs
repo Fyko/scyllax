@@ -60,7 +60,7 @@ async fn main() -> anyhow::Result<()> {
     let upsert_id = v1_uuid();
     let query = UpsertPerson {
         id: upsert_id,
-        email: MaybeUnset::Set("foo21@scyllax.local".to_string()),
+        email: "foo21@scyllax.local".to_string().into(),
         age: MaybeUnset::Set(Some(21)),
         data: MaybeUnset::Set(Some(PersonData {
             stripe_id: Some("stripe_id".to_string()),
