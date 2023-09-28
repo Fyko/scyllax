@@ -1,10 +1,10 @@
 //! common parsing functions
 use nom::{
     branch::alt,
-    bytes::complete::escaped_transform,
     bytes::complete::{tag, tag_no_case},
-    character::complete::{alpha1, alphanumeric1, digit1, none_of, one_of},
+    character::complete::{alpha1, alphanumeric1, digit1},
     combinator::map,
+    sequence::delimited,
     IResult,
 };
 
@@ -63,13 +63,22 @@ pub fn parse_value(input: &str) -> IResult<&str, Value> {
 }
 
 /// Parses a [`Value::Literal`].
-/// If there are any escaped quotes, thye should be included in the output.
+/// If there are any escaped quotes, they should be included in the output.
 /// e.g. `\"` should be parsed as `\"`
 /// - `foo` -> `foo`
 /// TODO: - `"foo"` -> `"foo"`
 fn parse_string(input: &str) -> IResult<&str, String> {
-    let (input, alpha) = alpha1(input)?;
+    let (input, alpha) = alt((
+        // barf
+        map(parse_escaped, |x| format!("\"{x}\"")),
+        map(alpha1, |x: &str| x.to_string()),
+    ))(input)?;
 
+    Ok((input, alpha.clone()))
+}
+
+fn parse_escaped(input: &str) -> IResult<&str, String> {
+    let (input, alpha) = delimited(tag("\""), alpha1, tag("\""))(input)?;
     Ok((input, alpha.to_string()))
 }
 
@@ -107,7 +116,7 @@ mod test {
     }
 
     // FIXME: this is broken
-    // #[test]
+    #[test]
     fn test_escaped_literal() {
         assert_eq!(
             super::parse_string(r#""foo""#),

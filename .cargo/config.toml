@@ -72,7 +72,7 @@ rustflags = [
     "-Wclippy::zero_sized_map_values",
     "-Wfuture_incompatible",
     # TODO: reenable this
-    "-Wmissing_docs",
+    # "-Wmissing_docs",
     "-Wnonstandard_style",
     "-Wrust_2018_idioms",
 ]
