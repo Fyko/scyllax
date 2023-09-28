@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'book/**'
+      - '.github/workflows/book.yml'
 
 concurrency:
   group: "pages"
@@ -30,7 +31,7 @@ jobs:
         run: mdbook build
 
       - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact
+        uses: actions/upload-pages-artifact@v2
         with:
           path: book/book
 
