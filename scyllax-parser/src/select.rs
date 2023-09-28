@@ -112,6 +112,38 @@ mod test {
     use crate::*;
     use pretty_assertions::assert_eq;
 
+    fn big() -> (&'static str, SelectQuery) {
+        (
+            "select id, name, age from person where id = :id and name = :name and age > ? limit 10",
+            SelectQuery {
+                table: "person".to_string(),
+                columns: vec![
+                    Column::Identifier("id".to_string()),
+                    Column::Identifier("name".to_string()),
+                    Column::Identifier("age".to_string()),
+                ],
+                condition: vec![
+                    WhereClause {
+                        column: Column::Identifier("id".to_string()),
+                        operator: ComparisonOperator::Equal,
+                        value: Value::Variable(Variable::NamedVariable("id".to_string())),
+                    },
+                    WhereClause {
+                        column: Column::Identifier("name".to_string()),
+                        operator: ComparisonOperator::Equal,
+                        value: Value::Variable(Variable::NamedVariable("name".to_string())),
+                    },
+                    WhereClause {
+                        column: Column::Identifier("age".to_string()),
+                        operator: ComparisonOperator::GreaterThan,
+                        value: Value::Variable(Variable::Placeholder),
+                    },
+                ],
+                limit: Some(Value::Number(10)),
+            },
+        )
+    }
+
     #[test]
     fn test_parse_asterisk() {
         assert_eq!(parse_asterisk("*"), Ok(("", Column::Asterisk)));
@@ -137,6 +169,12 @@ mod test {
             parse_limit_clause("limit ?"),
             Ok(("", Value::Variable(Variable::Placeholder)))
         );
+    }
+
+    #[test]
+    fn test_try_from() {
+        let (query, res) = big();
+        assert_eq!(SelectQuery::try_from(query), Ok(res));
     }
 
     #[test]
@@ -237,34 +275,7 @@ mod test {
             ))
         );
 
-        assert_eq!(
-            parse_select("select id, name, age from person where id = :id and name = :name and age > ? limit 10"),
-            Ok(( "", SelectQuery {
-                table: "person".to_string(),
-                columns: vec![
-                    Column::Identifier("id".to_string()),
-                    Column::Identifier("name".to_string()),
-                    Column::Identifier("age".to_string()),
-                ],
-                condition: vec![
-                    WhereClause {
-                        column: Column::Identifier("id".to_string()),
-                        operator: ComparisonOperator::Equal,
-                        value: Value::Variable(Variable::NamedVariable("id".to_string())),
-                    },
-                    WhereClause {
-                        column: Column::Identifier("name".to_string()),
-                        operator: ComparisonOperator::Equal,
-                        value: Value::Variable(Variable::NamedVariable("name".to_string())),
-                    },
-                    WhereClause {
-                        column: Column::Identifier("age".to_string()),
-                        operator: ComparisonOperator::GreaterThan,
-                        value: Value::Variable(Variable::Placeholder),
-                    },
-                ],
-                limit: Some(Value::Number(10)),
-            }))
-        );
+        let (query, res) = big();
+        assert_eq!(parse_select(query), Ok(("", res)));
     }
 }

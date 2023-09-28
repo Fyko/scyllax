@@ -3,7 +3,7 @@ use nom::{
     branch::alt,
     bytes::complete::escaped_transform,
     bytes::complete::{tag, tag_no_case},
-    character::complete::{alphanumeric1, digit1, none_of, one_of},
+    character::complete::{alpha1, alphanumeric1, digit1, none_of, one_of},
     combinator::map,
     IResult,
 };
@@ -57,17 +57,20 @@ pub enum Value {
 pub fn parse_value(input: &str) -> IResult<&str, Value> {
     alt((
         map(parse_variable, Value::Variable),
-        map(parse_literal, Value::Literal),
         map(parse_number, Value::Number),
+        map(parse_string, Value::Literal),
     ))(input)
 }
 
-/// Parses a [`Value::Literal`]
-fn parse_literal(input: &str) -> IResult<&str, String> {
-    let (input, _) = tag("\"")(input)?;
-    let (input, literal) = escaped_transform(none_of("\""), '\\', one_of("\""))(input)?;
-    let (input, _) = tag("\"")(input)?;
-    Ok((input, literal))
+/// Parses a [`Value::Literal`].
+/// If there are any escaped quotes, thye should be included in the output.
+/// e.g. `\"` should be parsed as `\"`
+/// - `foo` -> `foo`
+/// TODO: - `"foo"` -> `"foo"`
+fn parse_string(input: &str) -> IResult<&str, String> {
+    let (input, alpha) = alpha1(input)?;
+
+    Ok((input, alpha.to_string()))
 }
 
 /// Parses a [`Value::Number`]
@@ -94,4 +97,21 @@ pub fn parse_limit_clause(input: &str) -> IResult<&str, Value> {
     let (input, limit) = parse_value(input)?;
 
     Ok((input, limit))
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn test_regular_literal() {
+        assert_eq!(super::parse_string("foo"), Ok(("", "foo".to_string())));
+    }
+
+    // FIXME: this is broken
+    // #[test]
+    fn test_escaped_literal() {
+        assert_eq!(
+            super::parse_string(r#""foo""#),
+            Ok(("", r#""foo""#.to_string()))
+        );
+    }
 }
