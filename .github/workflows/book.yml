@@ -36,6 +36,7 @@ jobs:
           path: book/book
 
   deploy:
+    name: Deploy Website
     needs: build
     permissions:
       pages: write

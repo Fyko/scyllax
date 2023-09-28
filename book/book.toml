@@ -5,11 +5,9 @@ authors = ["Carter Himmel <carter@truffle.vip>"]
 language = "en"
 
 [output.html]
+site-url = "/scyllax/"
 git-repository-url = "https://github.com/trufflehq/scyllax/tree/main/book"
 edit-url-template  = "https://github.com/trufflehq/scyllax/edit/main/book/{path}"
 
 [output.html.playground]
 runnable = false
-
-[output.html.redirect]
-"/example.html" = "../example/README.md"
