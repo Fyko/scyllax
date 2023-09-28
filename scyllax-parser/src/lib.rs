@@ -14,9 +14,9 @@ use nom::{error::Error, Err, IResult};
 
 /// Represents a query
 /// ```rust
-/// use scyllax_parser::{Column, Query, SelectQuery};
+/// use scyllax_parser::*;
 ///
-/// let query = Query::try_from("select id, name from person");
+/// let query = Query::try_from("select id, name from person where id = ?");
 /// assert_eq!(
 ///     query,
 ///     Ok(Query::Select(SelectQuery {
@@ -25,7 +25,13 @@ use nom::{error::Error, Err, IResult};
 ///             Column::Identifier("id".to_string()),
 ///             Column::Identifier("name".to_string()),
 ///         ],
-///         condition: vec![],
+///         condition: vec![
+///             WhereClause {
+///                 column: Column::Identifier("id".to_string()),
+///                 operator: ComparisonOperator::Equal,
+///                 value: Value::Variable(Variable::Placeholder),
+///             },
+///         ],
 ///         limit: None,
 ///     }))
 /// );
@@ -50,5 +56,48 @@ impl<'a> TryFrom<&'a str> for Query {
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         Ok(parse_query(value)?.1)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn test_query_select() {
+        let query = Query::try_from(
+            "select id, name, age from person where id = :id and name = :name and age > ? limit 10",
+        );
+
+        assert_eq!(
+            query,
+            Ok(Query::Select(SelectQuery {
+                table: "person".to_string(),
+                columns: vec![
+                    Column::Identifier("id".to_string()),
+                    Column::Identifier("name".to_string()),
+                    Column::Identifier("age".to_string()),
+                ],
+                condition: vec![
+                    WhereClause {
+                        column: Column::Identifier("id".to_string()),
+                        operator: ComparisonOperator::Equal,
+                        value: Value::Variable(Variable::NamedVariable("id".to_string())),
+                    },
+                    WhereClause {
+                        column: Column::Identifier("name".to_string()),
+                        operator: ComparisonOperator::Equal,
+                        value: Value::Variable(Variable::NamedVariable("name".to_string())),
+                    },
+                    WhereClause {
+                        column: Column::Identifier("age".to_string()),
+                        operator: ComparisonOperator::GreaterThan,
+                        value: Value::Variable(Variable::Placeholder),
+                    },
+                ],
+                limit: Some(Value::Number(10)),
+            }))
+        );
     }
 }

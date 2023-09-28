@@ -118,6 +118,20 @@ mod test {
     }
 
     #[test]
+    fn test_parse_select_clause() {
+        assert_eq!(
+            parse_select_clause("id, name"),
+            Ok((
+                "",
+                vec![
+                    Column::Identifier("id".to_string()),
+                    Column::Identifier("name".to_string()),
+                ]
+            ))
+        );
+    }
+
+    #[test]
     fn test_parse_limit_clause() {
         assert_eq!(
             parse_limit_clause("limit ?"),
@@ -194,6 +208,63 @@ mod test {
                     limit: Some(Value::Variable(Variable::Placeholder)),
                 }
             ))
+        );
+
+        assert_eq!(
+            parse_select("select id, name from users where id in :id and age = ? limit ?"),
+            Ok((
+                "",
+                SelectQuery {
+                    table: "users".to_string(),
+                    columns: vec![
+                        Column::Identifier("id".to_string()),
+                        Column::Identifier("name".to_string()),
+                    ],
+                    condition: vec![
+                        WhereClause {
+                            column: Column::Identifier("id".to_string()),
+                            operator: r#where::ComparisonOperator::In,
+                            value: Value::Variable(Variable::NamedVariable("id".to_string())),
+                        },
+                        WhereClause {
+                            column: Column::Identifier("age".to_string()),
+                            operator: r#where::ComparisonOperator::Equal,
+                            value: Value::Variable(Variable::Placeholder),
+                        }
+                    ],
+                    limit: Some(Value::Variable(Variable::Placeholder)),
+                }
+            ))
+        );
+
+        assert_eq!(
+            parse_select("select id, name, age from person where id = :id and name = :name and age > ? limit 10"),
+            Ok(( "", SelectQuery {
+                table: "person".to_string(),
+                columns: vec![
+                    Column::Identifier("id".to_string()),
+                    Column::Identifier("name".to_string()),
+                    Column::Identifier("age".to_string()),
+                ],
+                condition: vec![
+                    WhereClause {
+                        column: Column::Identifier("id".to_string()),
+                        operator: ComparisonOperator::Equal,
+                        value: Value::Variable(Variable::NamedVariable("id".to_string())),
+                    },
+                    WhereClause {
+                        column: Column::Identifier("name".to_string()),
+                        operator: ComparisonOperator::Equal,
+                        value: Value::Variable(Variable::NamedVariable("name".to_string())),
+                    },
+                    WhereClause {
+                        column: Column::Identifier("age".to_string()),
+                        operator: ComparisonOperator::GreaterThan,
+                        value: Value::Variable(Variable::Placeholder),
+                    },
+                ],
+                limit: Some(Value::Number(10)),
+            }))
         );
     }
 }

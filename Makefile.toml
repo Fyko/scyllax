@@ -84,12 +84,22 @@ args = ["nextest", "run", "--workspace"]
 [tasks.cov]
 command = "cargo"
 env = { "RUN_MODE" = "test" }
-args = ["llvm-cov", "nextest", "--workspace", "--ignore-filename-regex", "src/main.rs", "${@}"]
+args = [
+    "llvm-cov", "nextest",
+    "-p", "scyllax-parser", "-p", "scyllax", "-p", "example",
+    "--ignore-filename-regex", "main.rs",
+    "${@}"
+]
 
 [tasks.cov-ci]
 command = "cargo"
 env = { "RUN_MODE" = "ci" }
-args = ["llvm-cov", "nextest", "--workspace", "--exclude", "scyllax-macros", "--lcov", "--output-path", "lcov.info"]
+args = [
+    "llvm-cov", "nextest",
+    "-p", "scyllax-parser", "-p", "scyllax", "-p", "example",
+    "--ignore-filename-regex", "main.rs",
+    "--lcov", "--output-path", "lcov.info"
+]
 
 [tasks.integration]
 env = { "RUN_MODE" = "test", "RUST_LOG" = "info", "RUST_BACKTRACE" = 1 }

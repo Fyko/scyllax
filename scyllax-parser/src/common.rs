@@ -3,7 +3,7 @@ use nom::{
     branch::alt,
     bytes::complete::escaped_transform,
     bytes::complete::{tag, tag_no_case},
-    character::complete::{none_of, one_of},
+    character::complete::{alphanumeric1, digit1, none_of, one_of},
     combinator::map,
     IResult,
 };
@@ -49,6 +49,8 @@ pub enum Value {
     Variable(Variable),
     /// The value is a literal
     Literal(String),
+    /// The value is a number
+    Number(usize),
 }
 
 /// Parses a [`Value`]
@@ -56,6 +58,7 @@ pub fn parse_value(input: &str) -> IResult<&str, Value> {
     alt((
         map(parse_variable, Value::Variable),
         map(parse_literal, Value::Literal),
+        map(parse_number, Value::Number),
     ))(input)
 }
 
@@ -67,10 +70,16 @@ fn parse_literal(input: &str) -> IResult<&str, String> {
     Ok((input, literal))
 }
 
+/// Parses a [`Value::Number`]
+fn parse_number(input: &str) -> IResult<&str, usize> {
+    let (input, number) = digit1(input)?;
+    Ok((input, number.parse().unwrap()))
+}
+
 /// Parses an identifier on.. idk tbd
 pub fn parse_identifier(input: &str) -> IResult<&str, &str> {
     // Assuming identifiers are alphanumeric and start with an alphabet
-    nom::character::complete::alpha1(input)
+    alphanumeric1(input)
 }
 
 /// Parses a [`Variable::Placeholder`]

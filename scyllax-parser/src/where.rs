@@ -84,16 +84,16 @@ fn parse_where_condition(input: &str) -> IResult<&str, WhereClause> {
 /// Parses a comparison operator
 fn parse_comparison_operator(input: &str) -> IResult<&str, ComparisonOperator> {
     alt((
+        map(tag(">="), |_| ComparisonOperator::GreaterThanOrEqual),
+        map(tag("<="), |_| ComparisonOperator::LessThanOrEqual),
         map(tag("="), |_| ComparisonOperator::Equal),
         map(tag(">"), |_| ComparisonOperator::GreaterThan),
         map(tag("<"), |_| ComparisonOperator::LessThan),
-        map(tag(">="), |_| ComparisonOperator::GreaterThanOrEqual),
-        map(tag("<="), |_| ComparisonOperator::LessThanOrEqual),
         map(tag_no_case("in"), |_| ComparisonOperator::In),
-        map(tag_no_case("contains"), |_| ComparisonOperator::Contains),
         map(tag_no_case("contains key"), |_| {
             ComparisonOperator::ContainsKey
         }),
+        map(tag_no_case("contains"), |_| ComparisonOperator::Contains),
     ))(input)
 }
 
@@ -104,7 +104,7 @@ mod test {
     use pretty_assertions::assert_eq;
 
     #[test]
-    fn test_parse_where_clause() {
+    fn test_parse_single_where_clause() {
         assert_eq!(
             parse_where_clause("where id = ?"),
             Ok((
@@ -115,6 +115,88 @@ mod test {
                     value: Value::Variable(Variable::Placeholder)
                 }]
             ))
+        );
+    }
+
+    #[test]
+    fn test_parse_multiple_where_clauses() {
+        assert_eq!(
+            parse_where_clause("where id = ? and name > :name"),
+            Ok((
+                "",
+                vec![
+                    WhereClause {
+                        column: Column::Identifier("id".to_string()),
+                        operator: ComparisonOperator::Equal,
+                        value: Value::Variable(Variable::Placeholder)
+                    },
+                    WhereClause {
+                        column: Column::Identifier("name".to_string()),
+                        operator: ComparisonOperator::GreaterThan,
+                        value: Value::Variable(Variable::NamedVariable("name".to_string()))
+                    }
+                ]
+            ))
+        );
+
+        assert_eq!(
+            parse_where_clause("where id = :id and name = :name and age > 10"),
+            Ok((
+                "",
+                vec![
+                    WhereClause {
+                        column: Column::Identifier("id".to_string()),
+                        operator: ComparisonOperator::Equal,
+                        value: Value::Variable(Variable::NamedVariable("id".to_string()))
+                    },
+                    WhereClause {
+                        column: Column::Identifier("name".to_string()),
+                        operator: ComparisonOperator::Equal,
+                        value: Value::Variable(Variable::NamedVariable("name".to_string()))
+                    },
+                    WhereClause {
+                        column: Column::Identifier("age".to_string()),
+                        operator: ComparisonOperator::GreaterThan,
+                        value: Value::Number(10)
+                    }
+                ]
+            ))
+        );
+    }
+
+    #[test]
+    fn test_parse_comparison_operator() {
+        assert_eq!(
+            parse_comparison_operator("="),
+            Ok(("", ComparisonOperator::Equal))
+        );
+        assert_eq!(
+            parse_comparison_operator(">"),
+            Ok(("", ComparisonOperator::GreaterThan))
+        );
+        assert_eq!(
+            parse_comparison_operator("<"),
+            Ok(("", ComparisonOperator::LessThan))
+        );
+        assert_eq!(
+            parse_comparison_operator(">="),
+            Ok(("", ComparisonOperator::GreaterThanOrEqual))
+        );
+        assert_eq!(
+            parse_comparison_operator("<="),
+            Ok(("", ComparisonOperator::LessThanOrEqual))
+        );
+        assert_eq!(
+            parse_comparison_operator("in"),
+            Ok(("", ComparisonOperator::In))
+        );
+        assert_eq!(
+            parse_comparison_operator("contains"),
+            Ok(("", ComparisonOperator::Contains))
+        );
+        assert_eq!(
+            parse_comparison_operator("contains key"),
+            Ok(("", ComparisonOperator::ContainsKey))
         );
     }
 }
