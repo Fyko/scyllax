@@ -1,5 +1,5 @@
 [workspace]
-members = ["example", "scyllax-cli", "scyllax-macros", "scyllax-parser"]
+members = ["example", "scyllax-cli", "scyllax-macros", "scyllax-macros-core", "scyllax-parser"]
 resolver = "2"
 
 [workspace.package]
@@ -19,27 +19,30 @@ readme = "README.md"
 name = "scyllax"
 readme = "README.md"
 description = "A SQLx and Discord inspired query system for Scylla"
-version = { workspace = true }
-license = { workspace = true }
-edition = { workspace = true }
-authors = { workspace = true }
-repository = { workspace = true }
-homepage = { workspace = true }
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
 
 [dependencies]
-anyhow = { workspace = true }
+anyhow.workspace = true
 async-trait = "0.1"
 getrandom = "0.2"
 mac_address = "1"
 once_cell = "1"
-scylla = { workspace = true }
+scylla.workspace = true
 scyllax-macros = { version = "0.1.8-alpha", path = "./scyllax-macros" }
+scyllax-macros-core = { version = "0.1.8-alpha", path = "./scyllax-macros-core" }
 thiserror = "1"
-tracing = { workspace = true }
-uuid = { workspace = true }
+tracing.workspace = true
+uuid.workspace = true
 
 [workspace.dependencies]
-scyllax-macros = { verison = "0.1.8-alpha", path = "scyllax-macros" }
+scyllax-macros = { verison = "0.1.8-alpha", path = "./scyllax-macros" }
+scyllax-macros-core = { verison = "0.1.8-alpha", path = "./scyllax-macros-core" }
+scyllax-parser = { verison = "0.1.8-alpha", path = "./scyllax-parser" }
 anyhow = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json", "tracing-log", "parking_lot"] }

@@ -1,7 +1,7 @@
 //! Example
 use entities::person::{
     model::{PersonData, PersonKind, UpsertPerson},
-    queries::{load, DeletePersonById, GetPeopleByIds, GetPersonByEmail, GetPersonById},
+    queries::{DeletePersonById, GetPeopleByIds, GetPersonByEmail, GetPersonById, PersonQueries},
 };
 use scyllax::prelude::*;
 use scyllax::{executor::create_session, util::v1_uuid};
@@ -22,22 +22,20 @@ async fn main() -> anyhow::Result<()> {
     let default_keyspace = std::env::var("SCYLLA_DEFAULT_KEYSPACE").ok();
 
     let session = create_session(known_nodes, default_keyspace).await?;
-    let mut executor = Executor::with_session(session);
-
-    load(&mut executor).await?;
+    let executor = Executor::<PersonQueries>::new(session).await?;
 
     let query = GetPersonByEmail {
         email: "foo1@scyllax.local".to_string(),
     };
     let res_one = executor
-        .execute_select(query)
+        .execute_read(&query)
         .await?
         .expect("person not found");
     tracing::info!("GetPersonByEmail returned: {:?}", res_one);
 
     let query = GetPersonById { id: res_one.id };
     let res_two = executor
-        .execute_select(query)
+        .execute_read(&query)
         .await?
         .expect("person not found");
     tracing::info!("GetPersonById returned: {:?}", res_two);
@@ -54,7 +52,7 @@ async fn main() -> anyhow::Result<()> {
         limit: ids.len() as i32,
         ids,
     };
-    let res = executor.execute_select(query).await?;
+    let res = executor.execute_read(&query).await?;
     tracing::info!("GetPeopleByIds returned: {:?}", res);
 
     let upsert_id = v1_uuid();
@@ -68,11 +66,11 @@ async fn main() -> anyhow::Result<()> {
         kind: MaybeUnset::Set(PersonKind::Parent),
         created_at: MaybeUnset::Unset,
     };
-    let res = executor.execute_upsert(query).await?;
+    let res = executor.execute_write(&query).await?;
     tracing::info!("UpsertPerson returned: {:?}", res);
 
     let delete = DeletePersonById { id: upsert_id };
-    let res = executor.execute_delete(delete).await?;
+    let res = executor.execute_write(&delete).await?;
     tracing::info!("DeletePersonById returned: {:?}", res);
 
     Ok(())

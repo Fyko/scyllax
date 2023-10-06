@@ -2,22 +2,12 @@
 //!
 //! See the [scyllax docs](https://docs.rs/scyllax) for more information.
 use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TokenStream2;
-
-mod entity;
-mod r#enum;
-mod json;
-mod queries;
-
-pub(crate) fn token_stream_with_error(mut tokens: TokenStream2, error: syn::Error) -> TokenStream2 {
-    tokens.extend(error.into_compile_error());
-    tokens
-}
+use scyllax_macros_core::{entity, json, prepare, queries, r#enum};
 
 /// Apply this attribute to a struct to generate a select query.
 /// ## Single result
 /// ```rust,ignore
-/// #[select_query(
+/// #[read_query(
 ///     query = "select * from person where id = ? limit 1",
 ///     entity_type = "PersonEntity"
 /// )]
@@ -29,9 +19,9 @@ pub(crate) fn token_stream_with_error(mut tokens: TokenStream2, error: syn::Erro
 /// ```
 /// ## Multiple results
 /// ```rust,ignore
-/// #[select_query(
+/// #[read_query(
 ///     query = "select * from person where id in ? limit ?",
-///     entity_type = "Vec<PersonEntity>"
+///     return_type = "Vec<PersonEntity>"
 /// )]
 /// pub struct GetPeopleByIds {
 ///     pub ids: Vec<Uuid>,
@@ -41,13 +31,13 @@ pub(crate) fn token_stream_with_error(mut tokens: TokenStream2, error: syn::Erro
 /// // -> Vec<PersonEntity>
 /// ```
 #[proc_macro_attribute]
-pub fn select_query(args: TokenStream, input: TokenStream) -> TokenStream {
-    queries::select::expand(args.into(), input.into()).into()
+pub fn read_query(args: TokenStream, input: TokenStream) -> TokenStream {
+    queries::read::expand(args.into(), input.into()).into()
 }
 
-/// Apply this attribute to a struct to generate a delete query.
+/// Apply this attribute to a struct to generate a write query.
 /// ```rust,ignore
-/// #[delete_query(
+/// #[write_query(
 ///    query = "delete from person where id = ?",
 /// )]
 /// pub struct DeletePersonById {
@@ -55,8 +45,8 @@ pub fn select_query(args: TokenStream, input: TokenStream) -> TokenStream {
 /// }
 /// ```
 #[proc_macro_attribute]
-pub fn delete_query(args: TokenStream, input: TokenStream) -> TokenStream {
-    queries::delete::expand(args.into(), input.into()).into()
+pub fn write_query(args: TokenStream, input: TokenStream) -> TokenStream {
+    queries::write::expand(args.into(), input.into()).into()
 }
 
 /// Apply this attribute to a entity struct to generate an upsert query.
@@ -126,4 +116,9 @@ pub fn int_enum_derive(input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn int_enum(args: TokenStream, input: TokenStream) -> TokenStream {
     r#enum::expand_attr(args.into(), input.into()).into()
+}
+
+#[proc_macro]
+pub fn create_query_collection(input: TokenStream) -> TokenStream {
+    prepare::expand(input.into()).into()
 }

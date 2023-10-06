@@ -32,6 +32,6 @@ fn main() {
     let default_keyspace = std::env::var("SCYLLA_DEFAULT_KEYSPACE").ok();
 
     let session = create_session(known_nodes, default_keyspace).await?;
-    let executor = Executor::with_session(session);
+    let executor = Executor::<UserQueries>::new(session).await?;
 }
 ```

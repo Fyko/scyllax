@@ -15,7 +15,7 @@ Simply create a struct with the fields you want to select, and annotate it with 
 #    pub created_at: i64,
 #}
 #
-#[select_query(
+#[read_query(
     query = "select * from person where id = ? limit 1",
     entity_type = "PersonEntity"
 )]

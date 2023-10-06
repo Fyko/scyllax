@@ -168,6 +168,5 @@ command = "cargo"
 args = ["audit"]
 
 [tasks.dev-book]
-cwd = "book"
 command = "mdbook"
-args = ["serve"]
+args = ["serve", "book"]

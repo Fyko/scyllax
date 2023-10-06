@@ -1,14 +1,14 @@
 use anyhow::Context;
 use console::style;
 use scylla::{frame::value::Timestamp, query::Query, statement::SerialConsistency};
-use scyllax::{executor::create_session, Executor};
+use scyllax::executor::{create_session, Executor};
 use sha2::{Digest, Sha384};
 use std::fs::{self, File};
 use time::format_description;
 
 use crate::{
     migrator::MigrationFolder,
-    model::{DeleteByVersion, GetLatestVersion, UpsertMigration},
+    model::{DeleteByVersion, GetLatestVersion, MigrationQueries, UpsertMigration},
     opt::ConnectOpts,
 };
 
@@ -81,10 +81,10 @@ pub async fn run(
 
     // if target_version is specified, then we need to check if we are already at the target version
     let session = create_session([connect_opts.database_url], Some(connect_opts.keyspace)).await?;
-    let executor = Executor::with_session(session);
+    let executor = Executor::<MigrationQueries>::new(session).await?;
 
     let current_version = executor
-        .execute_select(GetLatestVersion {})
+        .execute_read(&GetLatestVersion {})
         .await?
         .map_or(-1, |v| v.version);
 
@@ -124,7 +124,7 @@ pub async fn run(
         // we need to split them where there's a while line that's just a linebreak (\n)
         // and then execute each statement separately
         let statements = contents.split("\n\n").collect::<Vec<_>>();
-        let session = executor.session.get_session();
+        let session = &executor.session;
 
         println!(
             "Applying migration {}...",
@@ -170,7 +170,7 @@ pub async fn run(
             checksum: checksum.into(),
             execution_time: 0.into(),
         };
-        executor.execute_upsert(upsert_row).await?;
+        executor.execute_write(&upsert_row).await?;
 
         // if we are running only the next migration, then we need to stop here
         if only_next {
@@ -188,9 +188,9 @@ pub async fn revert(migration_source: &str, connect_opts: ConnectOpts) -> anyhow
 
     // if target_version is specified, then we need to check if we are already at the target version
     let session = create_session([connect_opts.database_url], Some(connect_opts.keyspace)).await?;
-    let executor = Executor::with_session(session);
+    let executor = Executor::<MigrationQueries>::new(session).await?;
 
-    let current_version = if let Some(v) = executor.execute_select(GetLatestVersion {}).await? {
+    let current_version = if let Some(v) = executor.execute_read(&GetLatestVersion {}).await? {
         v.version
     } else {
         println!("No migrations to revert");
@@ -227,7 +227,7 @@ pub async fn revert(migration_source: &str, connect_opts: ConnectOpts) -> anyhow
 
     let contents = fs::read_to_string(&up_path).context("Unable to read up file")?;
     let statements = contents.split("\n\n").collect::<Vec<_>>();
-    let session = executor.session.get_session();
+    let session = &executor.session;
 
     println!(
         "Reverting migration {}...",
@@ -261,7 +261,7 @@ pub async fn revert(migration_source: &str, connect_opts: ConnectOpts) -> anyhow
     );
 
     executor
-        .execute_delete(DeleteByVersion {
+        .execute_write(&DeleteByVersion {
             version: migration.version,
         })
         .await?;

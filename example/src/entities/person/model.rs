@@ -44,6 +44,7 @@ mod test {
     use super::*;
     use crate::entities::person::model::UpsertPerson;
     use pretty_assertions::assert_eq;
+    use scylla::frame::value::SerializedValues;
 
     #[test]
     fn test_pks() {
@@ -78,7 +79,8 @@ mod test {
             created_at: MaybeUnset::Unset,
         };
 
-        let (query, values) = upsert.query().expect("failed to parse into query");
+        let query = <UpsertPerson as Query>::query();
+        let values = <UpsertPerson as Query>::bind(&upsert).unwrap();
 
         assert_eq!(
             query,

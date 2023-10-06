@@ -1,10 +1,16 @@
-use scyllax::{delete_query, prelude::*};
+use super::model::UpsertPersonLogin;
+use scyllax::prelude::*;
 use uuid::Uuid;
 
+create_query_collection!(
+    PersonLoginQueries,
+    [GetPersonLoginById, DeletePersonLoginById, UpsertPersonLogin,]
+);
+
 /// Get a [`super::model::PersonLoginEntity`] by its [`uuid::Uuid`]
-#[select_query(
-    query = "select * from person_login where id = ? limit 1",
-    entity_type = "super::model::PersonLoginEntity"
+#[read_query(
+    query = "select * from person_login where id = :id limit 1",
+    return_type = "super::model::PersonLoginEntity"
 )]
 pub struct GetPersonLoginById {
     /// The [`uuid::Uuid`] of the [`super::model::PersonEntity`] to get
@@ -12,10 +18,7 @@ pub struct GetPersonLoginById {
 }
 
 /// Get a [`super::model::PersonLoginEntity`] by its [`uuid::Uuid`]
-#[delete_query(
-    query = "delete from person_login where id = ?",
-    entity_type = "super::model::PersonLoginEntity"
-)]
+#[write_query(query = "delete from person_login where id = :id")]
 pub struct DeletePersonLoginById {
     /// The [`uuid::Uuid`] of the [`super::model::PersonLoginEntity`] to get
     pub id: Uuid,
@@ -32,7 +35,7 @@ mod test {
 
         assert_eq!(
             GetPersonLoginById::query(),
-            r#"select id, person_id, count from person_login where id = ? limit 1"#
+            r#"select id, person_id, count from person_login where id = :id limit 1"#
         );
     }
 
@@ -42,7 +45,7 @@ mod test {
 
         assert_eq!(
             DeletePersonLoginById::query(),
-            r#"delete from person_login where id = ?"#
+            r#"delete from person_login where id = :id"#
         );
     }
 }

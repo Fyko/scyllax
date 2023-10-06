@@ -1,7 +1,7 @@
 # Delete Queries
 Writing delete queries, which is pretty much the same as [Select Queries](../select_queries/index.html), is incredibly easy with the `delete_query` macro.
 
-Simply create a struct with the fields you want to select, and annotate it with the `#[delete_query]` macro.
+Simply create a struct with the fields you want to select, and annotate it with the `#[write_query]` macro.
 
 ```rust
 #use scyllax::prelude::*;
@@ -15,7 +15,7 @@ Simply create a struct with the fields you want to select, and annotate it with 
 #    pub created_at: i64,
 #}
 #
-#[delete_query(
+#[write_query(
     query = "delete from person where id = ?",
     entity_type = "PersonEntity"
 )]

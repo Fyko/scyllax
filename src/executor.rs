@@ -1,82 +1,69 @@
 //! The `scyllax` [`Executor`] processes queries.
-
 use crate::{
-    error::ScyllaxError, DeleteQuery, EntityExt, FromRow, ImplValueList, SelectQuery, UpsertQuery,
+    collection::QueryCollection,
+    error::ScyllaxError,
+    prelude::WriteQuery,
+    queries::{Query, ReadQuery},
 };
-use scylla::{
-    prepared_statement::PreparedStatement, query::Query, transport::errors::QueryError,
-    CachingSession, QueryResult, SessionBuilder,
-};
+use scylla::{prepared_statement::PreparedStatement, QueryResult, Session, SessionBuilder};
 
 /// Creates a new [`CachingSession`] and returns it
 pub async fn create_session(
     known_nodes: impl IntoIterator<Item = impl AsRef<str>>,
     default_keyspace: Option<impl Into<String>>,
-) -> anyhow::Result<CachingSession> {
-    let session = CachingSession::from(
-        SessionBuilder::new()
-            .known_nodes(known_nodes)
-            .build()
-            .await?,
-        1_000,
-    );
+) -> anyhow::Result<Session> {
+    let session = SessionBuilder::new()
+        .known_nodes(known_nodes)
+        .build()
+        .await?;
 
     if let Some(ks) = default_keyspace {
-        session.get_session().use_keyspace(ks, true).await?;
+        session.use_keyspace(ks, true).await?;
     }
 
     Ok(session)
 }
 
-/// A structure that executes queries
-pub struct Executor {
-    /// The internal [`scylla::CachingSession`]
-    pub session: CachingSession,
+pub trait GetPreparedStatement<T: Query> {
+    fn get(&self) -> &PreparedStatement;
 }
 
-impl Executor {
-    /// Creates a new [`Executor`] with a provided [`scylla::CachingSession`].
-    pub fn with_session(session: CachingSession) -> Executor {
-        Self { session }
+pub struct Executor<T> {
+    pub session: Session,
+    queries: T,
+}
+
+impl<T: QueryCollection> Executor<T> {
+    pub async fn new(session: Session) -> Result<Self, ScyllaxError> {
+        let queries = T::new(&session).await?;
+
+        Ok(Self { session, queries })
     }
 
-    /// Prepares a query
-    pub async fn prepare_query(&self, query: String) -> Result<PreparedStatement, QueryError> {
+    pub async fn execute_read<Q>(&self, query: &Q) -> Result<Q::Output, ScyllaxError>
+    where
+        Q: Query + ReadQuery,
+        T: GetPreparedStatement<Q>,
+    {
+        let statement = self.queries.get_prepared::<Q>();
+        let variables = query.bind()?;
+
+        let result = self.session.execute(statement, variables).await?;
+
+        Q::parse_response(result).await
+    }
+
+    pub async fn execute_write<Q>(&self, query: &Q) -> Result<QueryResult, ScyllaxError>
+    where
+        Q: Query + WriteQuery,
+        T: GetPreparedStatement<Q>,
+    {
+        let statement = self.queries.get_prepared::<Q>();
+        let variables = query.bind()?;
+
         self.session
-            .add_prepared_statement(&Query::new(query))
+            .execute(statement, variables)
             .await
-    }
-
-    /// Executes a [`SelectQuery`] and returns the result
-    pub async fn execute_select<
-        T: EntityExt<T> + FromRow + ImplValueList,
-        R: Clone + std::fmt::Debug + Send + Sync,
-        E: SelectQuery<T, R>,
-    >(
-        &self,
-        query: E,
-    ) -> Result<R, ScyllaxError> {
-        let res = query.execute(self).await?;
-        E::parse_response(res).await
-    }
-
-    /// Executes a [`DeleteQuery`] and returns the result
-    pub async fn execute_delete<T: EntityExt<T> + FromRow + ImplValueList, E: DeleteQuery<T>>(
-        &self,
-        query: E,
-    ) -> Result<QueryResult, ScyllaxError> {
-        let res = query.execute(self).await?;
-
-        Ok(res)
-    }
-
-    /// Executes a [`UpsertQuery`] and returns the result
-    pub async fn execute_upsert<T: EntityExt<T> + FromRow + ImplValueList, E: UpsertQuery<T>>(
-        &self,
-        query: E,
-    ) -> Result<QueryResult, ScyllaxError> {
-        let res = query.execute(self).await?;
-
-        Ok(res)
+            .map_err(Into::into)
     }
 }

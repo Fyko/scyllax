@@ -17,12 +17,12 @@ pub struct PersonEntity {
     pub created_at: i64,
 }
 ```
-### 2. Select queries
-With the [`select_query`] attribute, it's easy to define select queries.
+### 2. Read queries
+With the [`read_query`] attribute, it's easy to define select queries.
 ```rust,ignore
-#[select_query(
-    query = "select * from person where id = ? limit 1",
-    entity_type = "PersonEntity"
+#[read_query(
+    query = "select * from person where id = :id limit 1",
+    return_type = "PersonEntity"
 )]
 pub struct GetPersonById {
     pub id: Uuid,
@@ -42,11 +42,10 @@ pub struct PersonEntity {
 ```
 
 ## Features
-- [x] Select Queries
-- [x] Upsert Queries (https://github.com/trufflehq/scyllax/pull/1)
-- [x] Delete Queries
+- [x] Read Queries
+- [x] Write Queries (https://github.com/trufflehq/scyllax/pull/1)
 - [ ] Request Coalescing
-- [ ] Compile-time Select Query Validation
+- [x] Compile-time Select Query Validation
   - ensure the where constraints exist on the struct
   - ensure the where constraints are the same type as the struct
 - [ ] Runtime Query Validation (structure matches schema)
