@@ -1,6 +1,6 @@
 [package]
 name = "scyllax"
-readme = "README.md"
+readme = "../README.md"
 description = "A SQLx and Discord inspired query system for Scylla"
 version.workspace = true
 license.workspace = true
@@ -16,8 +16,8 @@ getrandom = "0.2"
 mac_address = "1"
 once_cell = "1"
 scylla.workspace = true
-scyllax-macros = { version = "0.1.8-alpha", path = "../scyllax-macros" }
-scyllax-macros-core = { version = "0.1.8-alpha", path = "../scyllax-macros-core" }
+scyllax-macros = { version = "0.1.9-alpha", path = "../scyllax-macros" }
+scyllax-macros-core = { version = "0.1.9-alpha", path = "../scyllax-macros-core" }
 thiserror = "1"
 tracing.workspace = true
 uuid.workspace = true

@@ -3,7 +3,7 @@ members = ["example", "scyllax", "scyllax-cli", "scyllax-macros", "scyllax-macro
 resolver = "2"
 
 [workspace.package]
-version = "0.1.8-alpha"
+version = "0.1.9-alpha"
 license = "MIT OR Apache-2.0"
 edition = "2021"
 repository = "https://github.com/trufflehq/scyllax"
@@ -17,8 +17,8 @@ readme = "README.md"
 
 [workspace.dependencies]
 scyllax-macros = { verison = "0.1.8-alpha", path = "./scyllax-macros" }
-scyllax-macros-core = { verison = "0.1.8-alpha", path = "./scyllax-macros-core" }
-scyllax-parser = { verison = "0.1.8-alpha", path = "./scyllax-parser" }
+scyllax-macros-core = { verison = "0.1.9-alpha", path = "./scyllax-macros-core" }
+scyllax-parser = { verison = "0.1.9-alpha", path = "./scyllax-parser" }
 anyhow = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json", "tracing-log", "parking_lot"] }
