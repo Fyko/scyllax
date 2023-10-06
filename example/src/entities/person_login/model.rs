@@ -19,6 +19,7 @@ pub struct PersonLoginEntity {
 mod test {
     use super::*;
     use pretty_assertions::assert_eq;
+    use scylla::frame::value::SerializedValues;
 
     #[test]
     fn test_pks() {
@@ -48,7 +49,8 @@ mod test {
             count: 1.into(),
         };
 
-        let (query, values) = upsert.query().expect("failed to parse into query");
+        let query = <UpsertPersonLogin as Query>::query();
+        let values = <UpsertPersonLogin as Query>::bind(&upsert).unwrap();
 
         assert_eq!(
             query,

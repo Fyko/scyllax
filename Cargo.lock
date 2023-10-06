@@ -1535,6 +1535,7 @@ dependencies = [
  "once_cell",
  "scylla",
  "scyllax-macros",
+ "scyllax-macros-core",
  "thiserror",
  "tracing",
  "uuid",
@@ -1569,10 +1570,18 @@ dependencies = [
 name = "scyllax-macros"
 version = "0.1.8-alpha"
 dependencies = [
+ "scyllax-macros-core",
+]
+
+[[package]]
+name = "scyllax-macros-core"
+version = "0.1.8-alpha"
+dependencies = [
  "anyhow",
  "darling",
  "proc-macro2",
  "quote",
+ "scyllax-parser",
  "syn 2.0.29",
 ]
 

@@ -9,3 +9,5 @@
 - [Select Queries](./select_queries/README.md)
 - [Delete Queries](./delete_queries/README.md)
 - [Upsert Queries](./upsert_queries/README.md)
+- [Query Collections](./query_collections/README.md)
+- [Example](./example/README.md)

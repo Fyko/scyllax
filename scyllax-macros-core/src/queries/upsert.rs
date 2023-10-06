@@ -1,9 +1,8 @@
+use crate::entity::get_field_name;
 use darling::{ast::NestedMeta, FromMeta};
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{Field, ItemStruct};
-
-use crate::{entity::get_field_name, token_stream_with_error};
 
 #[derive(FromMeta)]
 pub(crate) struct UpsertQueryOptions {
@@ -13,7 +12,7 @@ pub(crate) struct UpsertQueryOptions {
 
 /// Attribute expand
 /// Just adds the dervie macro to the struct.
-pub(crate) fn expand(args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn expand(args: TokenStream, input: TokenStream) -> TokenStream {
     let attr_args = match NestedMeta::parse_meta_list(args.clone()) {
         Ok(args) => args,
         Err(e) => return darling::Error::from(e).write_errors(),
@@ -26,7 +25,7 @@ pub(crate) fn expand(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let input: ItemStruct = match syn::parse2(input.clone()) {
         Ok(it) => it,
-        Err(e) => return token_stream_with_error(input, e),
+        Err(e) => return e.to_compile_error(),
     };
 
     let input_clone = input.clone();
@@ -46,34 +45,28 @@ pub(crate) fn expand(args: TokenStream, input: TokenStream) -> TokenStream {
         if let syn::Type::Path(path) = &counter.ty {
             if let Some(ident) = path.path.get_ident() {
                 if ident != "scylla::frame::value::Counter" {
-                    return token_stream_with_error(
-                        input.into_token_stream(),
-                        syn::Error::new_spanned(
-                            counter.into_token_stream(),
-                            "Counter fields must be of type `scylla::frame::value::Counter`",
-                        ),
-                    );
+                    return syn::Error::new_spanned(
+                        counter.into_token_stream(),
+                        "Counter fields must be of type `scylla::frame::value::Counter`",
+                    )
+                    .to_compile_error();
                 }
             }
         } else {
-            return token_stream_with_error(
-                input.into_token_stream(),
-                syn::Error::new_spanned(
-                    counter.into_token_stream(),
-                    "Counter fields must be of type `scylla::frame::value::Counter",
-                ),
-            );
+            return syn::Error::new_spanned(
+                counter.into_token_stream(),
+                "Counter fields must be of type `scylla::frame::value::Counter",
+            )
+            .to_compile_error();
         }
     }
 
     if pks.is_empty() {
-        return token_stream_with_error(
+        return syn::Error::new_spanned(
             input.clone().into_token_stream(),
-            syn::Error::new_spanned(
-                input.clone().into_token_stream(),
-                "Entity can only be derived for structs with at least one #[pk] field.",
-            ),
-        );
+            "Entity can only be derived for structs with at least one #[pk] field.",
+        )
+        .to_compile_error();
     }
 
     upsert_impl(&input, &args, &pks, &counters)
@@ -147,7 +140,6 @@ pub(crate) fn upsert_impl(
         .map(|f| {
             let ident = &f.ident.clone().unwrap();
             let col = get_field_name(f);
-            let errors = error_switchback(f);
             let ident_string = ident.to_string();
 
             let query = if counters.contains(f) {
@@ -159,10 +151,7 @@ pub(crate) fn upsert_impl(
             (
                 query,
                 quote! {
-                    match variables.add_named_value(#ident_string, &self.#ident) {
-                        Ok(_) => (),
-                        #errors
-                    };
+                    values.add_named_value(#ident_string, &self.#ident)?;
                 },
             )
         })
@@ -176,16 +165,12 @@ pub(crate) fn upsert_impl(
         .map(|f| {
             let ident = &f.ident.clone().unwrap();
             let col = get_field_name(f);
-            let errors = error_switchback(f);
             let named_var = ident.to_string();
 
             (
                 (col.clone(), named_var.clone()),
                 quote! {
-                    match variables.add_named_value(#named_var, &self.#ident) {
-                        Ok(_) => (),
-                        #errors
-                    };
+                    values.add_named_value(#named_var, &self.#ident)?;
                 },
             )
         })
@@ -200,32 +185,23 @@ pub(crate) fn upsert_impl(
 
         #expanded_upsert_struct
 
-        #[scyllax::async_trait]
-        impl scyllax::UpsertQuery<#struct_ident> for #upsert_struct {
-            fn query(
-                &self,
-            ) -> Result<(String, scyllax::prelude::SerializedValues), scyllax::BuildUpsertQueryError> {
-                let query = #query.to_string();
-                let mut variables = scylla::frame::value::SerializedValues::new();
+        #[scyllax::prelude::async_trait]
+        impl scyllax::prelude::Query for #upsert_struct {
+            fn query() -> String {
+                #query.to_string()
+            }
+
+            fn bind(&self) -> scyllax::prelude::SerializedValuesResult {
+                let mut values = scylla_reexports::value::SerializedValues::new();
 
                 #(#set_sv_push)*
                 #(#where_sv_push)*
 
-                Ok((query, variables))
-            }
-
-
-            async fn execute(self, db: &scyllax::Executor) -> Result<scyllax::QueryResult, scyllax::ScyllaxError> {
-                let (query, values) = Self::query(&self)?;
-
-                tracing::debug! {
-                    query = ?query,
-                    values = values.len(),
-                    "executing upsert"
-                };
-                db.session.execute(query, values).await.map_err(|e| e.into())
+                Ok(values)
             }
         }
+
+        impl scyllax::prelude::WriteQuery for #upsert_struct {}
     }
 }
 
@@ -263,31 +239,6 @@ fn build_query(
         query.push(';');
 
         query
-    }
-}
-
-fn error_switchback(f: &&syn::Field) -> TokenStream {
-    let ident = &f.ident;
-
-    quote! {
-        Err(scylla::frame::value::SerializeValuesError::TooManyValues) => {
-            return Err(scyllax::BuildUpsertQueryError::TooManyValues {
-                field: stringify!(#ident).to_string(),
-            })
-        }
-        Err(scylla::frame::value::SerializeValuesError::MixingNamedAndNotNamedValues) => {
-            return Err(scyllax::BuildUpsertQueryError::MixingNamedAndNotNamedValues)
-        }
-        Err(scylla::frame::value::SerializeValuesError::ValueTooBig(_)) => {
-            return Err(scyllax::BuildUpsertQueryError::ValueTooBig {
-                field: stringify!(#ident).to_string(),
-            })
-        }
-        Err(scylla::frame::value::SerializeValuesError::ParseError) => {
-            return Err(scyllax::BuildUpsertQueryError::ParseError {
-                field: stringify!(#ident).to_string(),
-            })
-        }
     }
 }
 

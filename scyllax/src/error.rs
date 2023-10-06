@@ -18,6 +18,10 @@ pub enum ScyllaxError {
     /// There was an error when building an upsert query.
     #[error("Failed to build query: {0}")]
     BuildUpsertQueryError(#[from] BuildUpsertQueryError),
+
+    /// An error when serializing values
+    #[error("Failed to serialize values: {0}")]
+    SerializedValues(#[from] scylla::frame::value::SerializeValuesError),
 }
 
 /// An error when building an upsert query

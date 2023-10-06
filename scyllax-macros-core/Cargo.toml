@@ -1,0 +1,18 @@
+[package]
+name = "scyllax-macros-core"
+description = "Core macro impl for scyllax"
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme = "../README.md"
+
+[dependencies]
+anyhow.workspace = true
+darling = { version = "0.20", features = ["suggestions"] }
+proc-macro2 = "1"
+quote = "1"
+scyllax-parser = { path = "../scyllax-parser", version = "0.1.8-alpha" }
+syn = { version = "2", features = ["full", "derive", "extra-traits"] }

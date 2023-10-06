@@ -21,6 +21,9 @@ script = '''
     echo # things required by `cargo make audit`
     cargo install cargo-audit
 
+    echo # things required by `cargo release`
+    cargo install cargo-release
+
     echo # things required by `cargo make sort-deps`
     cargo install cargo-sort
 '''
@@ -168,6 +171,5 @@ command = "cargo"
 args = ["audit"]
 
 [tasks.dev-book]
-cwd = "book"
 command = "mdbook"
-args = ["serve"]
+args = ["serve", "book"]

@@ -1,21 +1,22 @@
-use scyllax::{delete_query, prelude::*};
+use super::model::UpsertPerson;
+use scyllax::prelude::*;
 use uuid::Uuid;
 
-/// Load all queries for this entity
-#[tracing::instrument(skip(db))]
-pub async fn load(db: &mut Executor) -> anyhow::Result<()> {
-    let _ = GetPersonById::prepare(db).await;
-    let _ = GetPeopleByIds::prepare(db).await;
-    let _ = GetPersonByEmail::prepare(db).await;
-    let _ = DeletePersonById::prepare(db).await;
-
-    Ok(())
-}
+create_query_collection!(
+    PersonQueries,
+    [
+        GetPersonById,
+        GetPeopleByIds,
+        GetPersonByEmail,
+        DeletePersonById,
+        UpsertPerson,
+    ]
+);
 
 /// Get a [`super::model::PersonEntity`] by its [`uuid::Uuid`]
-#[select_query(
-    query = "select * from person where id = ? limit 1",
-    entity_type = "super::model::PersonEntity"
+#[read_query(
+    query = "select * from person where id = :id limit 1",
+    return_type = "super::model::PersonEntity"
 )]
 pub struct GetPersonById {
     /// The [`uuid::Uuid`] of the [`super::model::PersonEntity`] to get
@@ -23,9 +24,9 @@ pub struct GetPersonById {
 }
 
 /// Get many [`super::model::PersonEntity`] by many [`uuid::Uuid`]
-#[select_query(
-    query = "select * from person where id in ? limit ?",
-    entity_type = "Vec<super::model::PersonEntity>"
+#[read_query(
+    query = "select * from person where id in :ids limit :limit",
+    return_type = "Vec<super::model::PersonEntity>"
 )]
 pub struct GetPeopleByIds {
     /// The [`uuid::Uuid`]s of the [`super::model::PersonEntity`]s to get
@@ -35,9 +36,9 @@ pub struct GetPeopleByIds {
 }
 
 /// Get a [`super::model::PersonEntity`] by its email address
-#[select_query(
-    query = "select * from person_by_email where email = ? limit 1",
-    entity_type = "super::model::PersonEntity"
+#[read_query(
+    query = "select * from person_by_email where email = :email limit 1",
+    return_type = "super::model::PersonEntity"
 )]
 pub struct GetPersonByEmail {
     /// The email address of the [`super::model::PersonEntity`] to get
@@ -45,10 +46,7 @@ pub struct GetPersonByEmail {
 }
 
 /// Get a [`super::model::PersonEntity`] by its [`uuid::Uuid`]
-#[delete_query(
-    query = "delete from person where id = ?",
-    entity_type = "super::model::PersonEntity"
-)]
+#[write_query(query = "delete from person where id = :id")]
 pub struct DeletePersonById {
     /// The [`uuid::Uuid`] of the [`super::model::PersonEntity`] to get
     pub id: Uuid,
@@ -65,7 +63,7 @@ mod test {
 
         assert_eq!(
             GetPersonById::query(),
-            r#"select id, email, age, data, kind, "createdAt" from person where id = ? limit 1"#
+            r#"select id, email, age, data, kind, "createdAt" from person where id = :id limit 1"#
         );
     }
 
@@ -78,7 +76,7 @@ mod test {
 
         assert_eq!(
             GetPeopleByIds::query(),
-            r#"select id, email, age, data, kind, "createdAt" from person where id in ? limit ?"#
+            r#"select id, email, age, data, kind, "createdAt" from person where id in :ids limit :limit"#
         );
     }
 
@@ -90,7 +88,7 @@ mod test {
 
         assert_eq!(
             GetPersonByEmail::query(),
-            r#"select id, email, age, data, kind, "createdAt" from person_by_email where email = ? limit 1"#
+            r#"select id, email, age, data, kind, "createdAt" from person_by_email where email = :email limit 1"#
         );
     }
 
@@ -100,7 +98,7 @@ mod test {
 
         assert_eq!(
             DeletePersonById::query(),
-            r#"delete from person where id = ?"#
+            r#"delete from person where id = :id"#
         );
     }
 }

@@ -1,6 +1,11 @@
 use scylla::frame::value::Timestamp;
 use scyllax::prelude::*;
 
+create_query_collection!(
+    MigrationQueries,
+    [GetLatestVersion, DeleteByVersion, UpsertMigration,]
+);
+
 #[upsert_query(table = "migration", name = UpsertMigration)]
 #[derive(scylla::FromRow, scylla::ValueList, Debug, Clone, PartialEq, Entity)]
 pub struct MigrationEntity {
@@ -16,17 +21,14 @@ pub struct MigrationEntity {
 }
 
 // get the latest version from the database
-#[select_query(
-    query = "select * from migration where bucket = 0 order by version desc limit 1",
-    entity_type = "MigrationEntity"
+#[read_query(
+    query_nocheck = "select * from migration where bucket = 0 order by version desc limit 1",
+    return_type = "MigrationEntity"
 )]
 pub struct GetLatestVersion {}
 
 /// Delete a migration by its version
-#[delete_query(
-    query = "delete from migration where bucket = 0 and version = ?",
-    entity_type = "MigrationEntity"
-)]
+#[write_query(query = "delete from migration where bucket = 0 and version = ?")]
 pub struct DeleteByVersion {
     pub version: i64,
 }

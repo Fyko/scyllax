@@ -1,12 +1,12 @@
 [package]
 name = "scyllax-cli"
 description = "The CLI for scyllax -- mainly managing migrations"
-version = { workspace = true }
-license = { workspace = true }
-edition = { workspace = true }
-authors = { workspace = true }
-repository = { workspace = true }
-homepage = { workspace = true }
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
 readme = "../README.md"
 
 [[bin]]
@@ -14,7 +14,7 @@ name = "scyllax"
 path = "src/bin/scyllax.rs"
 
 [dependencies]
-tokio = { workspace = true }
+tokio.workspace = true
 clap = { version = "4", features = ["derive", "env"] }
 clap_complete = { version = "4" }
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
@@ -23,13 +23,13 @@ url = { version = "2.4.1", default-features = false }
 async-trait = "0.1"
 console = "0.15.7"
 promptly = "0.3.1"
-scylla = { workspace = true }
-scyllax = { path = "../" }
+scylla.workspace = true
+scyllax = { path = "../scyllax" }
 serde_json = "1.0.107"
 serde = { version = "1.0.188", features = ["derive"] }
 glob = "0.3.1"
-tracing = { workspace = true }
+tracing.workspace = true
 filetime = "0.2.22"
 time = { version = "0.3.29", features = ["formatting"] }
 sha2 = "0.10.8"
-uuid = { workspace = true }
+uuid.workspace = true

@@ -26,10 +26,11 @@
 use nom::{
     branch::alt,
     bytes::complete::{tag, tag_no_case},
-    character::complete::{multispace0, multispace1},
-    combinator::{map, opt},
+    character::complete::{alpha1, alphanumeric1, multispace0, multispace1},
+    combinator::{map, opt, recognize},
     error::Error,
-    multi::separated_list0,
+    multi::{many0_count, separated_list0},
+    sequence::pair,
     Err, IResult,
 };
 
@@ -78,6 +79,13 @@ fn parse_asterisk(input: &str) -> IResult<&str, Column> {
     Ok((input, Column::Asterisk))
 }
 
+fn parse_table_name(input: &str) -> IResult<&str, &str> {
+    recognize(pair(
+        alt((alpha1, tag("_"))),
+        many0_count(alt((alphanumeric1, tag("_")))),
+    ))(input)
+}
+
 /// Parses a select query
 pub fn parse_select(input: &str) -> IResult<&str, SelectQuery> {
     let (input, _) = tag_no_case("select ")(input)?;
@@ -88,7 +96,7 @@ pub fn parse_select(input: &str) -> IResult<&str, SelectQuery> {
 
     let (input, _) = multispace1(input)?;
     let (input, _) = tag_no_case("from ")(input)?;
-    let (input, table) = parse_identifier(input)?;
+    let (input, table) = parse_table_name(input)?;
     let (input, _) = multispace0(input)?;
 
     let (input, condition) = opt(parse_where_clause)(input)?;
@@ -175,6 +183,28 @@ mod test {
     fn test_try_from() {
         let (query, res) = big();
         assert_eq!(SelectQuery::try_from(query), Ok(res));
+    }
+
+    #[test]
+    fn test_custom() {
+        let parsed = parse_select("select * from person_by_email where email = :email limit 1");
+
+        assert_eq!(
+            parsed,
+            Ok((
+                "",
+                SelectQuery {
+                    table: "person_by_email".to_string(),
+                    columns: vec![Column::Asterisk],
+                    condition: vec![WhereClause {
+                        column: Column::Identifier("email".to_string()),
+                        operator: ComparisonOperator::Equal,
+                        value: Value::Variable(Variable::NamedVariable("email".to_string())),
+                    }],
+                    limit: Some(Value::Number(1)),
+                }
+            ))
+        );
     }
 
     #[test]

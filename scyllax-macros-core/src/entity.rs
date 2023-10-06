@@ -1,14 +1,13 @@
-use crate::token_stream_with_error;
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{Expr, Field, ItemStruct};
 
 /// Attribute expand
 /// Just adds the dervie macro to the struct.
-pub(crate) fn expand(input: TokenStream) -> TokenStream {
+pub fn expand(input: TokenStream) -> TokenStream {
     let input: ItemStruct = match syn::parse2(input.clone()) {
         Ok(it) => it,
-        Err(e) => return token_stream_with_error(input, e),
+        Err(e) => return e.to_compile_error(),
     };
 
     let input_clone = input.clone();
@@ -19,13 +18,11 @@ pub(crate) fn expand(input: TokenStream) -> TokenStream {
         .collect::<Vec<_>>();
 
     if pks.is_empty() {
-        return token_stream_with_error(
+        return syn::Error::new_spanned(
             input.clone().into_token_stream(),
-            syn::Error::new_spanned(
-                input.clone().into_token_stream(),
-                "Entity can only be derived for structs with at least one #[pk] field.",
-            ),
-        );
+            "Entity can only be derived for structs with at least one #[pk] field.",
+        )
+        .to_compile_error();
     }
 
     entity_impl(&input, &pks)
@@ -39,7 +36,7 @@ fn entity_impl(input: &ItemStruct, pks: &[&Field]) -> TokenStream {
     let pks = pks.iter().map(|x| get_field_name(x)).collect::<Vec<_>>();
 
     quote! {
-        impl scyllax::EntityExt<#name> for #name {
+        impl scyllax::prelude::EntityExt<#name> for #name {
             fn keys() -> Vec<String> {
                 vec![#(#keys.to_string()),*]
             }
@@ -73,9 +70,16 @@ pub(crate) fn get_field_name(field: &Field) -> String {
         .to_string()
 }
 
-pub(crate) fn expand_attr(_args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn expand_attr(_args: TokenStream, input: TokenStream) -> TokenStream {
     quote! {
-        #[derive(Clone, Debug, PartialEq, scyllax::FromRow, scyllax::prelude::ValueList, scyllax::Entity)]
+        #[derive(
+            Clone,
+            Debug,
+            PartialEq,
+            scylla_reexports::FromRow,
+            scylla_reexports::ValueList,
+            scyllax::prelude::Entity
+        )]
         #input
     }
 }
