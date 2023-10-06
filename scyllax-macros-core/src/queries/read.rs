@@ -188,25 +188,25 @@ fn parse_query(input: &ItemStruct, query: &String) -> Result<SelectQuery, syn::E
     }
 
     // only allow named OR placeholder variables in parsed.conditions, not both.
-    let (has_named, has_placeholder) =
-        parsed
-            .condition
-            .iter()
-            .fold(
-                (false, false),
-                |(named, placeholder), condition| match condition.value {
-                    Value::Variable(Variable::NamedVariable(_)) => (true, placeholder),
-                    Value::Variable(Variable::Placeholder) => (named, true),
-                    _ => (named, placeholder),
-                },
-            );
+    // let (has_named, has_placeholder) =
+    //     parsed
+    //         .condition
+    //         .iter()
+    //         .fold(
+    //             (false, false),
+    //             |(named, placeholder), condition| match condition.value {
+    //                 Value::Variable(Variable::NamedVariable(_)) => (true, placeholder),
+    //                 Value::Variable(Variable::Placeholder) => (named, true),
+    //                 _ => (named, placeholder),
+    //             },
+    //         );
 
-    if has_named && has_placeholder {
-        return Err(syn::Error::new_spanned(
-            query.into_token_stream(),
-            "Cannot mix named and placeholder variables in query",
-        ));
-    }
+    // if has_named && has_placeholder {
+    //     return Err(syn::Error::new_spanned(
+    //         query.into_token_stream(),
+    //         "Cannot mix named and placeholder variables in query",
+    //     ));
+    // }
 
     // check that all variables in parsed.conditions match a field in the struct
     let misses = parsed

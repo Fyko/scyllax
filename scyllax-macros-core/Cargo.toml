@@ -14,5 +14,5 @@ anyhow.workspace = true
 darling = { version = "0.20", features = ["suggestions"] }
 proc-macro2 = "1"
 quote = "1"
-scyllax-parser.workspace = true
+scyllax-parser = { path = "../scyllax-parser", version = "0.1.8-alpha" }
 syn = { version = "2", features = ["full", "derive", "extra-traits"] }
