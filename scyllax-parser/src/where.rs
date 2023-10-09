@@ -1,5 +1,5 @@
 //! Parses where clauses in CQL statements
-//! ```
+//! ```ignore
 //! where_clause: `relation` ( AND `relation` )*
 //! relation: `column_name` `operator` `term`
 //!         : '(' `column_name` ( ',' `column_name` )* ')' `operator` `tuple_literal`

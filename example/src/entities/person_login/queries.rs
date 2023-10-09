@@ -35,7 +35,7 @@ mod test {
 
         assert_eq!(
             GetPersonLoginById::query(),
-            r#"select id, person_id, count from person_login where id = :id limit 1"#
+            r#"select "id", "person_id", "count" from person_login where id = :id limit 1"#
         );
     }
 

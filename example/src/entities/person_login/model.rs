@@ -25,7 +25,7 @@ mod test {
     fn test_pks() {
         assert_eq!(
             PersonLoginEntity::pks(),
-            vec!["id".to_string(), "person_id".to_string()]
+            vec![r#""id""#.to_string(), r#""person_id""#.to_string()]
         );
     }
 
@@ -34,9 +34,9 @@ mod test {
         assert_eq!(
             PersonLoginEntity::keys(),
             vec![
-                "id".to_string(),
-                "person_id".to_string(),
-                "count".to_string()
+                r#""id""#.to_string(),
+                r#""person_id""#.to_string(),
+                r#""count""#.to_string()
             ]
         );
     }
@@ -54,7 +54,7 @@ mod test {
 
         assert_eq!(
             query,
-            r#"update person_login set count = count + :count where id = :id and person_id = :person_id;"#
+            r#"update person_login set "count" = "count" + :count where "id" = :id and "person_id" = :person_id;"#
         );
 
         let mut result_values = SerializedValues::new();

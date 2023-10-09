@@ -63,7 +63,7 @@ mod test {
 
         assert_eq!(
             GetPersonById::query(),
-            r#"select id, email, age, data, kind, "createdAt" from person where id = :id limit 1"#
+            r#"select "id", "email", "age", "data", "kind", "createdAt" from person where id = :id limit 1"#
         );
     }
 
@@ -76,7 +76,7 @@ mod test {
 
         assert_eq!(
             GetPeopleByIds::query(),
-            r#"select id, email, age, data, kind, "createdAt" from person where id in :ids limit :limit"#
+            r#"select "id", "email", "age", "data", "kind", "createdAt" from person where id in :ids limit :rowlimit"#
         );
     }
 
@@ -88,7 +88,7 @@ mod test {
 
         assert_eq!(
             GetPersonByEmail::query(),
-            r#"select id, email, age, data, kind, "createdAt" from person_by_email where email = :email limit 1"#
+            r#"select "id", "email", "age", "data", "kind", "createdAt" from person_by_email where email = :email limit 1"#
         );
     }
 

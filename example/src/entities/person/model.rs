@@ -48,7 +48,7 @@ mod test {
 
     #[test]
     fn test_pks() {
-        assert_eq!(PersonEntity::pks(), vec!["id".to_string()]);
+        assert_eq!(PersonEntity::pks(), vec![r#""id""#.to_string()]);
     }
 
     #[test]
@@ -56,12 +56,12 @@ mod test {
         assert_eq!(
             PersonEntity::keys(),
             vec![
-                "id".to_string(),
-                "email".to_string(),
-                "age".to_string(),
-                "data".to_string(),
-                "kind".to_string(),
-                "\"createdAt\"".to_string()
+                r#""id""#.to_string(),
+                r#""email""#.to_string(),
+                r#""age""#.to_string(),
+                r#""data""#.to_string(),
+                r#""kind""#.to_string(),
+                r#""createdAt""#.to_string()
             ]
         );
     }
@@ -84,7 +84,7 @@ mod test {
 
         assert_eq!(
             query,
-            r#"update person set email = :email, age = :age, data = :data, kind = :kind, "createdAt" = :created_at where id = :id;"#
+            r#"update person set "email" = :email, "age" = :age, "data" = :data, "kind" = :kind, "createdAt" = :created_at where "id" = :id;"#
         );
 
         let mut result_values = SerializedValues::new();
