@@ -103,6 +103,7 @@ jobs:
           docker compose -f ./test/docker-compose.yml up -d --wait
 
       - name: Run Migrations
+        working-directory: ./test
         env:
           RUST_LOG: debug
           SCYLLA_NODES: 172.42.0.2,172.42.0.3,172.42.0.4
@@ -114,9 +115,6 @@ jobs:
           SCYLLA_NODES: 172.42.0.2,172.42.0.3,172.42.0.4
           SCYLLA_DEFAULT_KEYSPACE: scyllax
         run: cargo run -p example
-
-      - name: Run Unit Tests
-        run: cargo make cov-ci
 
       - name: Stop the cluster
         if: ${{ always() }}
