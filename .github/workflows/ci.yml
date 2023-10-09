@@ -44,11 +44,6 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
-      - name: Setup 3-node Scylla cluster
-        run: |
-          sudo sh -c "echo 2097152 >> /proc/sys/fs/aio-max-nr"
-          docker compose -f docker-compose.ci.yml up -d --wait
-
       - name: Run Formatter
         run: cargo make format-ci
 
@@ -67,17 +62,6 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
             files: lcov.info
-
-      - name: Stop the cluster
-        if: ${{ always() }}
-        run: docker compose -f docker-compose.ci.yml stop
-
-      - name: Print the cluster logs
-        if: ${{ always() }}
-        run: docker compose -f docker-compose.ci.yml logs
-
-      - name: Remove cluster
-        run: docker compose -f docker-compose.ci.yml down
 
   example:
     name: Run the example
