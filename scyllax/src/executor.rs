@@ -28,6 +28,7 @@ pub trait GetPreparedStatement<T: Query> {
     fn get(&self) -> &PreparedStatement;
 }
 
+#[derive(Debug)]
 pub struct Executor<T> {
     pub session: Session,
     queries: T,
@@ -65,5 +66,11 @@ impl<T: QueryCollection> Executor<T> {
             .execute(statement, variables)
             .await
             .map_err(Into::into)
+    }
+}
+
+impl<T: QueryCollection> std::fmt::Display for Executor<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.session)
     }
 }

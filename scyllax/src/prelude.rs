@@ -1,6 +1,6 @@
 //! Re-exports of the most commonly used types and traits.
 pub use crate::{
-    collection::QueryCollection,
+    collection::{prepare_query, QueryCollection},
     entity::EntityExt,
     error::{BuildUpsertQueryError, ScyllaxError},
     executor::{create_session, Executor, GetPreparedStatement},

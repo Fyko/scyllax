@@ -5,13 +5,13 @@ use scyllax::prelude::*;
 #[upsert_query(table = "person_login", name = UpsertPersonLogin)]
 pub struct PersonLoginEntity {
     /// The id of the person
-    #[pk]
+    #[entity(primary_key)]
     pub id: uuid::Uuid,
     /// The email address of the person
-    #[pk]
+    #[entity(primary_key)]
     pub person_id: uuid::Uuid,
     /// The number of times the person has logged in
-    #[counter]
+    #[entity(counter)]
     pub count: scylla::frame::value::Counter,
 }
 

@@ -1,8 +1,9 @@
-use crate::entity::get_field_name;
-use darling::{ast::NestedMeta, FromMeta};
+use darling::{ast::NestedMeta, FromDeriveInput, FromMeta};
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
-use syn::{Field, ItemStruct};
+use syn::{DeriveInput, ItemStruct};
+
+use crate::entity::{EntityDerive, EntityDeriveColumn};
 
 #[derive(FromMeta)]
 pub(crate) struct UpsertQueryOptions {
@@ -23,73 +24,43 @@ pub fn expand(args: TokenStream, input: TokenStream) -> TokenStream {
         Err(e) => return e.write_errors(),
     };
 
-    let input: ItemStruct = match syn::parse2(input.clone()) {
+    let input: DeriveInput = match syn::parse2(input.clone()) {
         Ok(it) => it,
         Err(e) => return e.to_compile_error(),
     };
 
-    let input_clone = input.clone();
-    let pks = input_clone
-        .fields
-        .iter()
-        .filter(|f| f.attrs.iter().any(|a| a.path().is_ident("pk")))
-        .collect::<Vec<_>>();
+    let entity = match EntityDerive::from_derive_input(&input) {
+        Ok(e) => e,
+        Err(e) => return e.write_errors(),
+    };
 
-    let counters = input_clone
-        .fields
-        .iter()
-        .filter(|f| f.attrs.iter().any(|a| a.path().is_ident("counter")))
-        .collect::<Vec<_>>();
-    // require the type of every counter be i64
-    for counter in &counters {
-        if let syn::Type::Path(path) = &counter.ty {
-            if let Some(ident) = path.path.get_ident() {
-                if ident != "scylla::frame::value::Counter" {
-                    return syn::Error::new_spanned(
-                        counter.into_token_stream(),
-                        "Counter fields must be of type `scylla::frame::value::Counter`",
-                    )
-                    .to_compile_error();
-                }
-            }
-        } else {
-            return syn::Error::new_spanned(
-                counter.into_token_stream(),
-                "Counter fields must be of type `scylla::frame::value::Counter",
-            )
-            .to_compile_error();
-        }
-    }
-
-    if pks.is_empty() {
-        return syn::Error::new_spanned(
-            input.clone().into_token_stream(),
-            "Entity can only be derived for structs with at least one #[pk] field.",
-        )
-        .to_compile_error();
-    }
-
-    upsert_impl(&input, &args, &pks, &counters)
+    upsert_impl(&input, &args, &entity)
 }
 
-// TODO: handle when all keys are pks and we need to use `insert` instead of `update`
 /// Create the implementation for the upsert query
 pub(crate) fn upsert_impl(
-    input: &ItemStruct,
+    input: &DeriveInput,
     opt: &UpsertQueryOptions,
-    pks: &[&Field],
-    counters: &[&Field],
+    entity: &EntityDerive,
 ) -> TokenStream {
     let upsert_struct = &opt.name;
     let upsert_table = &opt.table;
     let struct_ident = &input.ident;
+    let keys = entity
+        .data
+        .as_ref()
+        .take_struct()
+        .expect("Should never be enum")
+        .fields;
+    let primary_keys: Vec<&&EntityDeriveColumn> = keys.iter().filter(|f| f.primary_key).collect();
+    let counters: Vec<&&EntityDeriveColumn> = keys.iter().filter(|f| f.counter).collect();
 
-    let fields = match &input.fields {
-        syn::Fields::Named(fields) => fields.named.iter().collect::<Vec<_>>(),
-        _ => panic!("Entity can only be derived for structs."),
+    let input: ItemStruct = match syn::parse2(input.to_token_stream()) {
+        Ok(it) => it,
+        Err(e) => return e.to_compile_error(),
     };
 
-    let expanded_pks = pks
+    let expanded_pks = primary_keys
         .iter()
         .map(|f| {
             let ident = &f.ident;
@@ -103,9 +74,9 @@ pub(crate) fn upsert_impl(
         })
         .collect::<Vec<_>>();
 
-    let maybe_unset_fields = fields
+    let maybe_unset_fields = keys
         .iter()
-        .filter(|f| !pks.contains(f))
+        .filter(|f| !primary_keys.contains(f))
         .map(|f| {
             let ident = &f.ident;
             let ty = &f.ty;
@@ -133,16 +104,16 @@ pub(crate) fn upsert_impl(
 
     // SET clauses
     // expanded variables will loop over every field that isn't Pk
-    let (set_clauses, set_sv_push) = fields
+    let (set_clauses, set_sv_push) = keys
         .iter()
         // filter out pks
-        .filter(|f| !pks.contains(f))
+        .filter(|f| !primary_keys.contains(f))
         .map(|f| {
             let ident = &f.ident.clone().unwrap();
-            let col = get_field_name(f);
+            let col = f.name.as_ref().unwrap();
             let ident_string = ident.to_string();
 
-            let query = if counters.contains(f) {
+            let query = if counters.contains(&f) {
                 format!("{col} = {col} + :{ident_string}")
             } else {
                 format!("{col} = :{ident_string}")
@@ -158,13 +129,13 @@ pub(crate) fn upsert_impl(
         .unzip::<_, _, Vec<_>, Vec<_>>();
 
     // WHERE clauses
-    let (where_clauses, where_sv_push) = fields
+    let (where_clauses, where_sv_push) = keys
         .iter()
         // filter out pks
-        .filter(|f| pks.contains(f))
+        .filter(|f| primary_keys.contains(f))
         .map(|f| {
             let ident = &f.ident.clone().unwrap();
-            let col = get_field_name(f);
+            let col = f.name.as_ref().unwrap();
             let named_var = ident.to_string();
 
             (

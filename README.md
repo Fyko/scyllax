@@ -9,14 +9,15 @@ A SQLx and Discord inspired query system for Scylla.
 ### 1. Model definition
 Before you can write any queries, you have to define a model.
 ```rust,ignore
-#[derive(Clone, Debug, FromRow, PartialEq, ValueList, Entity)]
+#[entity]
 pub struct PersonEntity {
-    #[pk]
+    #[entity(primary_key)]
     pub id: uuid::Uuid,
     pub email: String,
     pub created_at: i64,
 }
 ```
+
 ### 2. Read queries
 With the [`read_query`] attribute, it's easy to define select queries.
 ```rust,ignore
@@ -28,13 +29,14 @@ pub struct GetPersonById {
     pub id: Uuid,
 }
 ```
+
 ### 3. Upsert queries
 With the [`upsert_query`] attribute, it's easy to define upsert queries.
 ```rust,ignore
+#[entity]
 #[upsert_query(table = "person", name = UpsertPerson)]
-#[derive(Clone, Debug, FromRow, PartialEq, ValueList, Entity)]
 pub struct PersonEntity {
-    #[pk]
+    #[entity(primary_key)]
     pub id: uuid::Uuid,
     pub email: String,
     pub created_at: i64,

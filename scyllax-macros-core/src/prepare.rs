@@ -76,7 +76,7 @@ pub fn expand(input: TokenStream) -> TokenStream {
 
     let prepares = queries.iter().map(|field| {
         quote! {
-            #field: session.prepare(#field::query()).await?,
+            #field: scyllax::prelude::prepare_query(&session, #field::query()).await?,
         }
     });
 

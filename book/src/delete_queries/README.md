@@ -8,10 +8,10 @@ Simply create a struct with the fields you want to select, and annotate it with 
 #
 #\#[entity]
 #pub struct PersonEntity {
-#	#[pk]
+#	#[entity(pk)]
 #    pub id: uuid::Uuid,
 #    pub email: String,
-#	#[rename = "createdAt"]
+#	#[entity(rename = "createdAt")]
 #    pub created_at: i64,
 #}
 #

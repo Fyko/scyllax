@@ -24,7 +24,7 @@ pub enum PersonKind {
 #[upsert_query(table = "person", name = UpsertPerson)]
 pub struct PersonEntity {
     /// The id of the person
-    #[pk]
+    #[entity(primary_key)]
     pub id: uuid::Uuid,
     /// The email address of the person
     pub email: String,
@@ -35,7 +35,7 @@ pub struct PersonEntity {
     /// The kind of person
     pub kind: PersonKind,
     /// The date the person was created
-    #[rename("createdAt")]
+    #[entity(rename = "createdAt")]
     pub created_at: i64,
 }
 

@@ -7,13 +7,13 @@ Creating a new entity is super simple. Simply use the [`scyllax::Entity`](https:
 #
 #[derive(Clone, Debug, PartialEq, Entity, FromRow, ValueList)]
 pub struct PersonEntity {
-	#[pk]
+	#[entity(pk)]
     pub id: uuid::Uuid,
     pub email: String,
     pub created_at: i64,
 }
 ```
-Since `id` is a partition key, it must be annotated with `#[pk]`.
+Since `id` is a primary key, it must be annotated with `#[entity(pk)]`.
 **Clustering columns must be treated the same way**.
 
 This is so that, when eventually using the `upsert_query` macro, scyllax will use the column in the where clause rather than the set clause.

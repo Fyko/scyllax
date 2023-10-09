@@ -6,10 +6,10 @@ If you have some column names you can't change to work with the Rust naming conv
 #
 #[entity]
 pub struct PersonEntity {
-	#[pk]
+	#[entity(pk)]
     pub id: uuid::Uuid,
     pub email: String,
-	#[rename = "createdAt"]
+	#[entity(rename = "createdAt")]
     pub created_at: i64,
 }
 ```

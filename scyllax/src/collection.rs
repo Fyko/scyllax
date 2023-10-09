@@ -16,3 +16,12 @@ pub trait QueryCollection {
         <Self as GetPreparedStatement<T>>::get(self)
     }
 }
+
+#[tracing::instrument(skip(session))]
+pub async fn prepare_query(
+    session: &Session,
+    query: String,
+) -> Result<PreparedStatement, ScyllaxError> {
+    tracing::info!("preparing");
+    Ok(session.prepare(query).await?)
+}

@@ -93,9 +93,9 @@ impl Deref for Source {
 /// Argument for the database URL.
 #[derive(Args, Debug)]
 pub struct ConnectOpts {
-    /// Location of the DB, by default will be read from the DATABASE_URL env var
-    #[clap(long, short = 'D', env)]
-    pub database_url: String,
+    /// Location of the scylla nodes, by default will be read from the SCYLLA_NODES env var
+    #[clap(long, short = 'N', env)]
+    pub scylla_nodes: String,
 
     /// The keyspace to store migrations information.
     #[clap(long, short = 'K', default_value = "scyllax_migrations")]

@@ -122,7 +122,7 @@ mod test {
 
     fn big() -> (&'static str, SelectQuery) {
         (
-            "select id, name, age from person where id = :id and name = :name and age > ? limit 10",
+            "SELECT id, name, age FROM person WHERE id = :id AND name = :name AND age > ? LIMIT 10",
             SelectQuery {
                 table: "person".to_string(),
                 columns: vec![
@@ -177,6 +177,12 @@ mod test {
             parse_limit_clause("limit ?"),
             Ok(("", Value::Variable(Variable::Placeholder)))
         );
+    }
+
+    #[test]
+    #[should_panic(expected = "variable `limit` is a reserved keyword")]
+    fn test_fail_parse_limit_clause() {
+        parse_limit_clause("limit :limit").unwrap();
     }
 
     #[test]

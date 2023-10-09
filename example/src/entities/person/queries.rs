@@ -25,14 +25,14 @@ pub struct GetPersonById {
 
 /// Get many [`super::model::PersonEntity`] by many [`uuid::Uuid`]
 #[read_query(
-    query = "select * from person where id in :ids limit :limit",
+    query = "select * from person where id in :ids limit :rowlimit",
     return_type = "Vec<super::model::PersonEntity>"
 )]
 pub struct GetPeopleByIds {
     /// The [`uuid::Uuid`]s of the [`super::model::PersonEntity`]s to get
     pub ids: Vec<Uuid>,
     /// The maximum number of [`super::model::PersonEntity`]s to get
-    pub limit: i32,
+    pub rowlimit: i32,
 }
 
 /// Get a [`super::model::PersonEntity`] by its email address
@@ -71,7 +71,7 @@ mod test {
     fn test_get_people_by_ids() {
         let _query = GetPeopleByIds {
             ids: vec![v1_uuid(), v1_uuid()],
-            limit: 10,
+            rowlimit: 10,
         };
 
         assert_eq!(

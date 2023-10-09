@@ -2,6 +2,7 @@
 //! See the source code and tests for examples of usage (for now).
 pub mod common;
 pub mod delete;
+pub mod reserved;
 pub mod select;
 pub mod r#where;
 

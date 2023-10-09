@@ -44,6 +44,11 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
+      - name: Setup 3-node Scylla cluster
+        run: |
+          sudo sh -c "echo 2097152 >> /proc/sys/fs/aio-max-nr"
+          docker compose -f docker-compose.ci.yml up -d --wait
+
       - name: Run Formatter
         run: cargo make format-ci
 
@@ -62,3 +67,64 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
             files: lcov.info
+
+      - name: Stop the cluster
+        if: ${{ always() }}
+        run: docker compose -f docker-compose.ci.yml stop
+
+      - name: Print the cluster logs
+        if: ${{ always() }}
+        run: docker compose -f docker-compose.ci.yml logs
+
+      - name: Remove cluster
+        run: docker compose -f docker-compose.ci.yml down
+
+  example:
+    name: Run the example
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Register Problem Matchers
+        uses: r7kamura/rust-problem-matchers@v1
+
+      - run: rustup toolchain install stable --profile minimal
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup 3-node Scylla cluster
+        run: |
+          sudo sh -c "echo 2097152 >> /proc/sys/fs/aio-max-nr"
+          docker compose -f ./test/docker-compose.yml up -d --wait
+
+      - name: Run Migrations
+        env:
+          RUST_LOG: debug
+          SCYLLA_NODES: 172.42.0.2,172.42.0.3,172.42.0.4
+        run: cargo run -p scyllax-cli -- migrate run
+
+      - name: Run Example
+        env:
+          RUST_LOG: debug
+          SCYLLA_NODES: 172.42.0.2,172.42.0.3,172.42.0.4
+          SCYLLA_DEFAULT_KEYSPACE: scyllax
+        run: cargo run -p example
+
+      - name: Run Unit Tests
+        run: cargo make cov-ci
+
+      - name: Stop the cluster
+        if: ${{ always() }}
+        run: docker compose -f ./test/docker-compose.yml stop
+
+      - name: Print the cluster logs
+        if: ${{ always() }}
+        run: docker compose -f ./test/docker-compose.yml logs
+
+      - name: Remove cluster
+        run: docker compose -f ./test/docker-compose.yml down

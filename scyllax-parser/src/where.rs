@@ -27,7 +27,7 @@ use crate::common::{parse_identifier, parse_value, Column, Value};
 pub fn parse_where_clause(input: &str) -> IResult<&str, Vec<WhereClause>> {
     let (input, _) = tag_no_case("where ")(input)?;
 
-    separated_list0(tag(" and "), parse_where_condition)(input)
+    separated_list0(tag_no_case(" and "), parse_where_condition)(input)
 }
 
 /// Represents a single `where` clause on a CQL statement

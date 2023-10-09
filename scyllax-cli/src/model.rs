@@ -6,12 +6,12 @@ create_query_collection!(
     [GetLatestVersion, DeleteByVersion, UpsertMigration,]
 );
 
+#[entity]
 #[upsert_query(table = "migration", name = UpsertMigration)]
-#[derive(scylla::FromRow, scylla::ValueList, Debug, Clone, PartialEq, Entity)]
 pub struct MigrationEntity {
-    #[pk]
+    #[entity(primary_key)]
     pub version: i64,
-    #[pk]
+    #[entity(primary_key)]
     pub bucket: i32,
     pub description: String,
     pub installed_on: Timestamp,
@@ -28,7 +28,7 @@ pub struct MigrationEntity {
 pub struct GetLatestVersion {}
 
 /// Delete a migration by its version
-#[write_query(query = "delete from migration where bucket = 0 and version = ?")]
+#[write_query(query = "delete from migration where bucket = 0 and version = :version")]
 pub struct DeleteByVersion {
     pub version: i64,
 }

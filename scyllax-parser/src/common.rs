@@ -4,9 +4,12 @@ use nom::{
     bytes::complete::{tag, tag_no_case},
     character::complete::{alpha1, alphanumeric1, digit1},
     combinator::map,
+    error::{ErrorKind, ParseError},
     sequence::delimited,
-    IResult,
+    IResult, InputLength,
 };
+
+use crate::reserved::parse_cql_keyword;
 
 /// Represents a column
 #[derive(Debug, PartialEq)]
@@ -32,6 +35,11 @@ pub fn parse_variable(input: &str) -> IResult<&str, Variable> {
     alt((
         map(parse_placeholder, |_| Variable::Placeholder),
         map(parse_named_variable, |ident| {
+            // check if the variable is reserved. if it is, throw an error
+            if parse_cql_keyword(ident).is_ok() {
+                panic!("variable `{ident}` is a reserved keyword");
+            }
+
             Variable::NamedVariable(ident.to_string())
         }),
     ))(input)
@@ -106,6 +114,14 @@ pub fn parse_limit_clause(input: &str) -> IResult<&str, Value> {
     let (input, limit) = parse_value(input)?;
 
     Ok((input, limit))
+}
+
+pub(crate) fn eof<I: Copy + InputLength, E: ParseError<I>>(input: I) -> IResult<I, I, E> {
+    if input.input_len() == 0 {
+        Ok((input, input))
+    } else {
+        Err(nom::Err::Error(E::from_error_kind(input, ErrorKind::Eof)))
+    }
 }
 
 #[cfg(test)]

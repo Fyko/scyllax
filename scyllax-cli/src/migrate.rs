@@ -80,7 +80,11 @@ pub async fn run(
     let files = fs::read_dir(migration_source).context("Unable to read migrations directory")?;
 
     // if target_version is specified, then we need to check if we are already at the target version
-    let session = create_session([connect_opts.database_url], Some(connect_opts.keyspace)).await?;
+    let session = create_session(
+        connect_opts.scylla_nodes.split(','),
+        Some(connect_opts.keyspace),
+    )
+    .await?;
     let executor = Executor::<MigrationQueries>::new(session).await?;
 
     let current_version = executor
@@ -187,7 +191,11 @@ pub async fn revert(migration_source: &str, connect_opts: ConnectOpts) -> anyhow
         fs::read_dir(migration_source).context("Unable to read migrations directory")?;
 
     // if target_version is specified, then we need to check if we are already at the target version
-    let session = create_session([connect_opts.database_url], Some(connect_opts.keyspace)).await?;
+    let session = create_session(
+        connect_opts.scylla_nodes.split(','),
+        Some(connect_opts.keyspace),
+    )
+    .await?;
     let executor = Executor::<MigrationQueries>::new(session).await?;
 
     let current_version = if let Some(v) = executor.execute_read(&GetLatestVersion {}).await? {

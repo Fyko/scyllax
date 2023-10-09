@@ -7,10 +7,10 @@ Now listen up. Upsert queries with scyllax are special. You don't have to hand w
 #[entity]
 #[upsert_query(table = "person", name = UpsertPerson)]
 pub struct PersonEntity {
-	#[pk]
+	#[entity(pk)]
     pub id: uuid::Uuid,
     pub email: String,
-	#[rename = "createdAt"]
+	#[entity(rename = "createdAt")]
     pub created_at: i64,
 }
 ```

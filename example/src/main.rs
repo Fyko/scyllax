@@ -1,5 +1,5 @@
 //! Example
-use entities::person::{
+use example::entities::person::{
     model::{PersonData, PersonKind, UpsertPerson},
     queries::{DeletePersonById, GetPeopleByIds, GetPersonByEmail, GetPersonById, PersonQueries},
 };
@@ -7,8 +7,6 @@ use scyllax::prelude::*;
 use scyllax::{executor::create_session, util::v1_uuid};
 use tracing_subscriber::prelude::*;
 use uuid::Uuid;
-
-pub mod entities;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -48,10 +46,7 @@ async fn main() -> anyhow::Result<()> {
     .iter()
     .map(|s| Uuid::parse_str(s).unwrap())
     .collect::<Vec<_>>();
-    let query = GetPeopleByIds {
-        limit: ids.len() as i32,
-        ids,
-    };
+    let query = GetPeopleByIds { ids, rowlimit: 10 };
     let res = executor.execute_read(&query).await?;
     tracing::info!("GetPeopleByIds returned: {:?}", res);
 

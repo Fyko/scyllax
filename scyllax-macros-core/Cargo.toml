@@ -11,6 +11,7 @@ readme = "../README.md"
 
 [dependencies]
 anyhow.workspace = true
+bae = { version = "0.2", package = "sea-bae" }
 darling = { version = "0.20", features = ["suggestions"] }
 proc-macro2 = "1"
 quote = "1"
