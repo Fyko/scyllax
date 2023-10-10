@@ -22,6 +22,7 @@ pub enum PersonKind {
 /// Represents a person in the database
 #[entity]
 #[upsert_query(table = "person", name = UpsertPerson)]
+#[upsert_query(table = "person", name = UpsertPersonWithTTL, ttl)]
 pub struct PersonEntity {
     /// The id of the person
     #[entity(primary_key)]
@@ -105,6 +106,56 @@ mod test {
             .expect("failed to add value");
         result_values
             .add_named_value("id", &upsert.id)
+            .expect("failed to add value");
+
+        assert_eq!(values, result_values);
+    }
+
+    #[test]
+    fn test_upsert_ttl() {
+        let upsert = UpsertPersonWithTTL {
+            id: v1_uuid(),
+            email: MaybeUnset::Set("foo21@scyllax.local".to_string()),
+            age: MaybeUnset::Unset,
+            kind: MaybeUnset::Set(PersonKind::Parent),
+            data: MaybeUnset::Set(Some(PersonData {
+                stripe_id: Some("stripe_id".to_string()),
+            })),
+            created_at: MaybeUnset::Unset,
+
+            set_ttl: 300,
+        };
+
+        let query = <UpsertPersonWithTTL as Query>::query();
+        let values = <UpsertPersonWithTTL as Query>::bind(&upsert).unwrap();
+
+        assert_eq!(
+            query,
+            r#"update person using ttl :set_ttl set "email" = :email, "age" = :age, "data" = :data, "kind" = :kind, "createdAt" = :created_at where "id" = :id;"#
+        );
+
+        let mut result_values = SerializedValues::new();
+        result_values
+            .add_named_value("email", &upsert.email)
+            .expect("failed to add value");
+        result_values
+            .add_named_value("age", &upsert.age)
+            .expect("failed to add value");
+        result_values
+            .add_named_value("data", &upsert.data)
+            .expect("failed to add value");
+        result_values
+            .add_named_value("kind", &upsert.kind)
+            .expect("failed to add value");
+        result_values
+            .add_named_value("created_at", &upsert.created_at)
+            .expect("failed to add value");
+        result_values
+            .add_named_value("id", &upsert.id)
+            .expect("failed to add value");
+
+        result_values
+            .add_named_value("set_ttl", &upsert.set_ttl)
             .expect("failed to add value");
 
         assert_eq!(values, result_values);

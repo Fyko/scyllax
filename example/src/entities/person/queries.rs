@@ -1,4 +1,4 @@
-use super::model::UpsertPerson;
+use super::model::{UpsertPerson, UpsertPersonWithTTL};
 use scyllax::prelude::*;
 use uuid::Uuid;
 
@@ -10,6 +10,7 @@ create_query_collection!(
         GetPersonByEmail,
         DeletePersonById,
         UpsertPerson,
+        UpsertPersonWithTTL,
     ]
 );
 

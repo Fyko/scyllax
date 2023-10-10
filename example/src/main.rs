@@ -1,8 +1,8 @@
 //! Example
-use example::entities::person::{
-    model::{PersonData, PersonKind, UpsertPerson},
+use example::entities::{person::{
+    model::{PersonData, PersonKind, UpsertPerson, UpsertPersonWithTTL},
     queries::{DeletePersonById, GetPeopleByIds, GetPersonByEmail, GetPersonById, PersonQueries},
-};
+}, PersonEntity};
 use scyllax::prelude::*;
 use scyllax::{executor::create_session, util::v1_uuid};
 use tracing_subscriber::prelude::*;
@@ -22,33 +22,18 @@ async fn main() -> anyhow::Result<()> {
     let session = create_session(known_nodes, default_keyspace).await?;
     let executor = Executor::<PersonQueries>::new(session).await?;
 
-    let query = GetPersonByEmail {
-        email: "foo1@scyllax.local".to_string(),
-    };
-    let res_one = executor
-        .execute_read(&query)
-        .await?
-        .expect("person not found");
-    tracing::info!("GetPersonByEmail returned: {:?}", res_one);
-
-    let query = GetPersonById { id: res_one.id };
-    let res_two = executor
-        .execute_read(&query)
-        .await?
-        .expect("person not found");
-    tracing::info!("GetPersonById returned: {:?}", res_two);
-    assert_eq!(res_one, res_two);
+    let by_email_res = by_email(&executor, "foo1@scyllax.local".to_string()).await?;
+    let by_id_res = by_id(&executor, by_email_res.id).await?;
+    assert_eq!(by_email_res, by_id_res);
 
     let ids = [
         "e01e84d6-414c-11ee-be56-0242ac120002",
         "e01e880a-414c-11ee-be56-0242ac120002",
     ]
-    .iter()
-    .map(|s| Uuid::parse_str(s).unwrap())
-    .collect::<Vec<_>>();
-    let query = GetPeopleByIds { ids, rowlimit: 10 };
-    let res = executor.execute_read(&query).await?;
-    tracing::info!("GetPeopleByIds returned: {:?}", res);
+        .iter()
+        .map(|s| Uuid::parse_str(s).unwrap())
+        .collect::<Vec<_>>();
+    by_ids(&executor, ids).await?;
 
     let upsert_id = v1_uuid();
     let query = UpsertPerson {
@@ -68,5 +53,54 @@ async fn main() -> anyhow::Result<()> {
     let res = executor.execute_write(&delete).await?;
     tracing::info!("DeletePersonById returned: {:?}", res);
 
+    let upsert_ttl_id = v1_uuid();
+    let query = UpsertPersonWithTTL {
+        id: upsert_ttl_id,
+        email: "foo42@scyllax.local".to_string().into(),
+        age: MaybeUnset::Set(Some(42)),
+        data: MaybeUnset::Set(Some(PersonData {
+            stripe_id: Some("stripe_id".to_string()),
+        })),
+        kind: MaybeUnset::Set(PersonKind::Parent),
+        created_at: MaybeUnset::Unset,
+
+        // 5 minutes
+        set_ttl: 300,
+    };
+    let res = executor.execute_write(&query).await?;
+    tracing::info!("UpsertPersonWithTTL returned: {:?}", res);
+
     Ok(())
+}
+
+async fn by_email(executor: &Executor<PersonQueries>, email: String) -> anyhow::Result<PersonEntity> {
+    let res = executor
+        .execute_read(&GetPersonByEmail {
+            email
+        })
+        .await?
+        .expect("person not found");
+
+    tracing::info!("GetPersonByEmail returned: {:?}", res);
+
+    Ok(res)
+}
+
+async fn by_id(executor: &Executor<PersonQueries>, id: Uuid) -> anyhow::Result<PersonEntity> {
+    let res = executor
+        .execute_read(&GetPersonById { id })
+        .await?
+        .expect("person not found");
+
+    tracing::info!("GetPersonById returned: {:?}", res);
+
+    Ok(res)
+}
+
+async fn by_ids(executor: &Executor<PersonQueries>, ids: Vec<Uuid>) -> anyhow::Result<Vec<PersonEntity>> {
+    let res = executor.execute_read(&GetPeopleByIds { ids, rowlimit: 10 }).await?;
+
+    tracing::info!("GetPeopleByIds returned: {:?}", res);
+
+    Ok(res)
 }

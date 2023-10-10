@@ -9,6 +9,7 @@ use crate::entity::{EntityDerive, EntityDeriveColumn};
 pub(crate) struct UpsertQueryOptions {
     pub name: syn::Ident,
     pub table: String,
+    pub ttl: Option<bool>,
 }
 
 /// Attribute expand
@@ -89,6 +90,16 @@ pub(crate) fn upsert_impl(
         })
         .collect::<Vec<_>>();
 
+
+    let ttl = if opt.ttl.unwrap_or(false) {
+        quote! {
+            #[doc = "The ttl of the row in seconds"]
+            pub set_ttl: i32,
+        }
+    } else {
+        quote! {}
+    };
+
     let docs = format!(
         "Upserts a {} into the `{}` table",
         struct_ident, upsert_table
@@ -99,6 +110,7 @@ pub(crate) fn upsert_impl(
         pub struct #upsert_struct {
             #(#expanded_pks,)*
             #(#maybe_unset_fields,)*
+            #ttl
         }
     };
 
@@ -149,7 +161,14 @@ pub(crate) fn upsert_impl(
 
     // if there are no set clauses, then we need to do an insert
     // because we can't do an update with no set clauses
-    let query = build_query(upsert_table, set_clauses, where_clauses);
+    let query = build_query(opt, upsert_table, set_clauses, where_clauses);
+    let ttl_sv_push = if opt.ttl.unwrap_or(false) {
+        quote! {
+            values.add_named_value("set_ttl", &self.set_ttl)?;
+        }
+    } else {
+        quote! {}
+    };
 
     quote! {
         #input
@@ -167,6 +186,7 @@ pub(crate) fn upsert_impl(
 
                 #(#set_sv_push)*
                 #(#where_sv_push)*
+                #ttl_sv_push
 
                 Ok(values)
             }
@@ -177,12 +197,18 @@ pub(crate) fn upsert_impl(
 }
 
 fn build_query(
+    args: &UpsertQueryOptions,
     table: &String,
     set_clauses: Vec<String>,
     where_clauses: Vec<(String, String)>,
 ) -> String {
+    let ttl = match args.ttl.unwrap_or(false) {
+        true => " using ttl :set_ttl",
+        _ => "",
+    };
+
     if set_clauses.is_empty() {
-        let mut query = format!("insert into {table}");
+        let mut query = format!("insert into {table}{ttl}");
         let (cols, named_var) = where_clauses.into_iter().unzip::<_, _, Vec<_>, Vec<_>>();
         let cols = cols.join(", ");
         let named_var = named_var
@@ -195,7 +221,7 @@ fn build_query(
 
         query
     } else {
-        let mut query = format!("update {table} set ");
+        let mut query = format!("update {table}{ttl} set ");
         let query_set = set_clauses.join(", ");
         query.push_str(&query_set);
 
@@ -215,7 +241,9 @@ fn build_query(
 
 #[cfg(test)]
 mod tests {
-    use super::build_query;
+    use syn::{parse::Parser, parse_str};
+
+    use super::*;
 
     fn get_set_clauses() -> Vec<String> {
         vec![
@@ -238,6 +266,11 @@ mod tests {
     #[test]
     fn test_update() {
         let query = build_query(
+            &UpsertQueryOptions {
+                name: syn::parse_str::<syn::Ident>("UpdatePerson").unwrap(),
+                table: "person".to_string(),
+                ttl: None,
+            },
             &"person".to_string(),
             get_set_clauses(),
             get_where_clauses(),
@@ -250,12 +283,49 @@ mod tests {
     }
 
     #[test]
+    fn test_update_ttl() {
+        let query = build_query(
+            &UpsertQueryOptions {
+                name: syn::parse_str::<syn::Ident>("UpdatePerson").unwrap(),
+                table: "person".to_string(),
+                ttl: Some(true),
+            },
+            &"person".to_string(),
+            get_set_clauses(),
+            get_where_clauses(),
+        );
+
+        assert_eq!(
+            query,
+            "update person using ttl :set_ttl set name = :name, email = :email, \"createdAt\" = :created_at where id = :id and \"orgId\" = :org_id;",
+        );
+    }
+
+    #[test]
     fn test_insert() {
-        let query = build_query(&"person".to_string(), vec![], get_where_clauses());
+        let query = build_query(&UpsertQueryOptions {
+            name: syn::parse_str::<syn::Ident>("UpdatePerson").unwrap(),
+            table: "person".to_string(),
+            ttl: Default::default(),
+        }, &"person".to_string(), vec![], get_where_clauses());
 
         assert_eq!(
             query,
             "insert into person (id, \"orgId\") values (:id, :org_id);",
+        );
+    }
+
+    #[test]
+    fn test_insert_ttl() {
+        let query = build_query(&UpsertQueryOptions {
+            name: syn::parse_str::<syn::Ident>("UpdatePerson").unwrap(),
+            table: "person".to_string(),
+            ttl: Some(true),
+        }, &"person".to_string(), vec![], get_where_clauses());
+
+        assert_eq!(
+            query,
+            "insert into person using ttl :set_ttl (id, \"orgId\") values (:id, :org_id);",
         );
     }
 }
