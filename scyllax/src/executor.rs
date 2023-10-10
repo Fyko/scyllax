@@ -110,13 +110,7 @@ impl<T: QueryCollection + Clone + Send + Sync + 'static> Executor<T> {
                         // let (response_rx, response_tx) = oneshot::channel();
                         // let _ = runner.send(QueryRunnerMessage { key: key.clone(), query, response_rx }).await;
 
-                        let session = self.session.clone();
-                        let statement = self.queries.get_prepared::<Q>();
-                        let handle = Executor::<T>::perform_read_query(
-                            session,
-                            statement,
-                            query
-                        );
+                        let handle = self.perform_read_query(query);
                         join_set.spawn(async move {
                             (key, handle.await)
                         });
@@ -137,15 +131,17 @@ impl<T: QueryCollection + Clone + Send + Sync + 'static> Executor<T> {
     }
 
     /// this function does the requests themselves
-    async fn perform_read_query<Q>(session: Arc<Session>, statement: &PreparedStatement, query: Q) -> Result<<Q as ReadQuery>::Output, ScyllaxError>
+    // async fn perform_read_query<Q>(session: Arc<Session>, statement: &PreparedStatement, query: Q) -> Result<<Q as ReadQuery>::Output, ScyllaxError>
+    async fn perform_read_query<Q>(&self, query: Q) -> Result<<Q as ReadQuery>::Output, ScyllaxError>
     where
         Q: Query + ReadQuery + Send + Sync,
         T: GetPreparedStatement<Q> + GetCoalescingSender<Q>,
     {
+        let statement = self.queries.get_prepared::<Q>();
         // FIXME: better error handling
         let variables = query.bind().unwrap();
         // FIXME: better error handling
-        let result = session.execute(statement, variables).await.unwrap();
+        let result = self.session.execute(statement, variables).await.unwrap();
 
         Q::parse_response(result).await
     }
