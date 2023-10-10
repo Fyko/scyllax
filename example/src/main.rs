@@ -1,4 +1,6 @@
 //! Example
+use std::sync::Arc;
+
 use example::entities::{
     person::{
         model::{PersonData, PersonKind, UpsertPerson, UpsertPersonWithTTL},
@@ -25,7 +27,7 @@ async fn main() -> anyhow::Result<()> {
     let default_keyspace = std::env::var("SCYLLA_DEFAULT_KEYSPACE").ok();
 
     let session = create_session(known_nodes, default_keyspace).await?;
-    let executor = Executor::<PersonQueries>::new(session).await?;
+    let executor = Executor::<PersonQueries>::new(Arc::new(session)).await?;
 
     let by_email_res = by_email(&executor, "foo1@scyllax.local".to_string()).await?;
     let by_id_res = by_id(&executor, by_email_res.id).await?;
@@ -83,7 +85,7 @@ async fn by_email(
     email: String,
 ) -> anyhow::Result<PersonEntity> {
     let res = executor
-        .execute_read(&GetPersonByEmail { email })
+        .execute_read(GetPersonByEmail { email })
         .await?
         .expect("person not found");
 
@@ -94,7 +96,7 @@ async fn by_email(
 
 async fn by_id(executor: &Executor<PersonQueries>, id: Uuid) -> anyhow::Result<PersonEntity> {
     let res = executor
-        .execute_read(&GetPersonById { id })
+        .execute_read(GetPersonById { id })
         .await?
         .expect("person not found");
 
@@ -108,7 +110,7 @@ async fn by_ids(
     ids: Vec<Uuid>,
 ) -> anyhow::Result<Vec<PersonEntity>> {
     let res = executor
-        .execute_read(&GetPeopleByIds { ids, rowlimit: 10 })
+        .execute_read(GetPeopleByIds { ids, rowlimit: 10 })
         .await?;
 
     tracing::info!("GetPeopleByIds returned: {:?}", res);

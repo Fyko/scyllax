@@ -3,7 +3,7 @@ pub use crate::{
     collection::{prepare_query, QueryCollection},
     entity::EntityExt,
     error::{BuildUpsertQueryError, ScyllaxError},
-    executor::{create_session, Executor, GetPreparedStatement, GetCoalescingSender},
+    executor::{create_session, Executor, GetCoalescingSender, GetPreparedStatement},
     maybe_unset::MaybeUnset,
     queries::{Query, ReadQuery, SerializedValuesResult, WriteQuery},
     util::v1_uuid,

@@ -1,7 +1,7 @@
 //! This module contains the `prepare_queries!` macro.
-use proc_macro2::TokenStream;
 use convert_case::{Case, Casing};
-use quote::{quote, ToTokens, format_ident};
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote, ToTokens};
 use syn::{
     parse::{Parse, ParseStream},
     ExprArray,
@@ -50,7 +50,11 @@ impl Parse for PrepareQueriesInput {
             })
             .collect::<syn::Result<Vec<_>>>()?;
 
-        Ok(Self { name, read_queries, write_queries })
+        Ok(Self {
+            name,
+            read_queries,
+            write_queries,
+        })
     }
 }
 
@@ -70,7 +74,8 @@ pub fn expand(input: TokenStream) -> TokenStream {
     };
     let read_queries = args.read_queries;
     let write_queries = args.write_queries;
-    let queries: Vec<&proc_macro2::Ident> = read_queries.iter().chain(write_queries.iter()).collect();
+    let queries: Vec<&proc_macro2::Ident> =
+        read_queries.iter().chain(write_queries.iter()).collect();
     let name = args.name;
 
     let prepared_statements = queries.iter().map(|field| {
@@ -104,7 +109,8 @@ pub fn expand(input: TokenStream) -> TokenStream {
 
     let coalescing_senders = read_queries.iter().map(|field| {
         let doc = format!("The task for `{}`.", field);
-        let prop = format_ident!("{}_task", field.to_string().to_case(Case::Snake)).to_token_stream();
+        let prop =
+            format_ident!("{}_task", field.to_string().to_case(Case::Snake)).to_token_stream();
         quote! {
             #[allow(non_snake_case)]
             #[doc = #doc]
@@ -118,26 +124,31 @@ pub fn expand(input: TokenStream) -> TokenStream {
             impl scyllax::prelude::GetCoalescingSender<#field> for #name {
                 #[doc = "Get a task."]
                 fn get(&self) -> &tokio::sync::mpsc::Sender<scyllax::executor::ShardMessage<#field>> {
-                    &self.#prop
+                    &self.#prop.as_ref().unwrap()
                 }
             }
         }
     });
 
     let create_empty_senders = read_queries.iter().map(|field| {
-        let prop = format_ident!("{}_task", field.to_string().to_case(Case::Snake)).to_token_stream();
+        let prop =
+            format_ident!("{}_task", field.to_string().to_case(Case::Snake)).to_token_stream();
         quote! {
             #prop: None,
         }
     });
 
     let create_senders = read_queries.iter().map(|field| {
-        let prop = format_ident!("{}_task", field.to_string().to_case(Case::Snake)).to_token_stream();
+        let prop =
+            format_ident!("{}_task", field.to_string().to_case(Case::Snake)).to_token_stream();
         quote! {
             self.#prop = {
                 let (tx, rx) = tokio::sync::mpsc::channel(100);
-                tokio::spawn(executor.read_task::<#field>(rx));
-                tx
+                let ex = executor.clone();
+                tokio::spawn(async move {
+                    ex.read_task::<#field>(rx).await;
+                });
+                Some(tx)
             };
         }
     });
@@ -145,6 +156,7 @@ pub fn expand(input: TokenStream) -> TokenStream {
     quote! {
         #[doc = "A collection of prepared statements."]
         #[allow(non_snake_case)]
+        #[derive(Debug, Clone)]
         pub struct #name {
             #(#prepared_statements)*
             #(#coalescing_senders)*
@@ -160,9 +172,9 @@ pub fn expand(input: TokenStream) -> TokenStream {
                 })
             }
 
-            fn register_tasks(mut self, executor: &scyllax::prelude::Executor<Self>) -> Self {
+            fn register_tasks(mut self, executor: std::sync::Arc<scyllax::prelude::Executor<Self>>) -> Self {
                 #(#create_senders)*
-                
+
                 self
             }
         }

@@ -1,4 +1,11 @@
-use crate::{error::ScyllaxError, executor::{Executor, GetPreparedStatement, GetCoalescingSender, ShardMessage}, queries::Query, prelude::ReadQuery};
+use std::sync::Arc;
+
+use crate::{
+    error::ScyllaxError,
+    executor::{Executor, GetCoalescingSender, GetPreparedStatement, ShardMessage},
+    prelude::ReadQuery,
+    queries::Query,
+};
 use async_trait::async_trait;
 use scylla::{prepared_statement::PreparedStatement, Session};
 use tokio::sync::mpsc::Sender;
@@ -10,7 +17,7 @@ pub trait QueryCollection {
     where
         Self: Sized;
 
-    fn register_tasks(&mut self, executor: Executor<Self>) -> Self
+    fn register_tasks(self, executor: Arc<Executor<Self>>) -> Self
     where
         Self: Sized;
 

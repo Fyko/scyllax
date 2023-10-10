@@ -3,7 +3,10 @@ use console::style;
 use scylla::{frame::value::Timestamp, query::Query, statement::SerialConsistency};
 use scyllax::executor::{create_session, Executor};
 use sha2::{Digest, Sha384};
-use std::fs::{self, File};
+use std::{
+    fs::{self, File},
+    sync::Arc,
+};
 use time::format_description;
 
 use crate::{
@@ -85,10 +88,10 @@ pub async fn run(
         Some(connect_opts.keyspace),
     )
     .await?;
-    let executor = Executor::<MigrationQueries>::new(session).await?;
+    let executor = Executor::<MigrationQueries>::new(Arc::new(session)).await?;
 
     let current_version = executor
-        .execute_read(&GetLatestVersion {})
+        .execute_read(GetLatestVersion {})
         .await?
         .map_or(-1, |v| v.version);
 
@@ -196,9 +199,9 @@ pub async fn revert(migration_source: &str, connect_opts: ConnectOpts) -> anyhow
         Some(connect_opts.keyspace),
     )
     .await?;
-    let executor = Executor::<MigrationQueries>::new(session).await?;
+    let executor = Executor::<MigrationQueries>::new(Arc::new(session)).await?;
 
-    let current_version = if let Some(v) = executor.execute_read(&GetLatestVersion {}).await? {
+    let current_version = if let Some(v) = executor.execute_read(GetLatestVersion {}).await? {
         v.version
     } else {
         println!("No migrations to revert");

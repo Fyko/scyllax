@@ -4,16 +4,8 @@ use uuid::Uuid;
 
 create_query_collection!(
     PersonQueries,
-    [
-        GetPersonById,
-        GetPeopleByIds,
-        GetPersonByEmail,
-    ],
-    [
-        DeletePersonById,
-        UpsertPerson,
-        UpsertPersonWithTTL,
-    ]
+    [GetPersonById, GetPeopleByIds, GetPersonByEmail,],
+    [DeletePersonById, UpsertPerson, UpsertPersonWithTTL,]
 );
 
 /// Get a [`super::model::PersonEntity`] by its [`uuid::Uuid`]

@@ -1,5 +1,4 @@
 //! The `scyllax` [`Executor`] processes queries.
-use std::{collections::HashMap, sync::mpsc::RecvError};
 use crate::{
     collection::QueryCollection,
     error::ScyllaxError,
@@ -7,7 +6,8 @@ use crate::{
     queries::{Query, ReadQuery},
 };
 use scylla::{prepared_statement::PreparedStatement, QueryResult, Session, SessionBuilder};
-use tokio::sync::mpsc::{Sender, Receiver};
+use std::{collections::HashMap, sync::Arc};
+use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
 
 /// Creates a new [`CachingSession`] and returns it
@@ -37,15 +37,26 @@ pub trait GetCoalescingSender<T: Query + ReadQuery> {
 
 #[derive(Debug)]
 pub struct Executor<T> {
-    pub session: Session,
+    pub session: Arc<Session>,
     queries: T,
 }
 
-pub type ShardMessage<Q> = (Q, oneshot::Sender<Result<<Q as ReadQuery>::Output, ScyllaxError>>);
+pub type ShardMessage<Q> = (
+    Q,
+    oneshot::Sender<Result<<Q as ReadQuery>::Output, ScyllaxError>>,
+);
+type TaskRequestMap<Q> =
+    HashMap<String, Vec<oneshot::Sender<Result<<Q as ReadQuery>::Output, ScyllaxError>>>>;
 
-impl<T: QueryCollection> Executor<T> {
-    pub async fn new(session: Session) -> Result<Self, ScyllaxError> {
+impl<T: QueryCollection + Clone> Executor<T> {
+    pub async fn new(session: Arc<Session>) -> Result<Self, ScyllaxError> {
         let queries = T::new(&session).await?;
+        let executor = Arc::new(Self {
+            session: session.clone(),
+            queries,
+        });
+
+        let queries = executor.queries.clone().register_tasks(executor);
         let executor = Self { session, queries };
 
         Ok(executor)
@@ -67,12 +78,12 @@ impl<T: QueryCollection> Executor<T> {
         }
     }
 
-    async fn read_task<Q>(&self, mut rx: Receiver<ShardMessage<Q>>)
+    pub async fn read_task<Q>(&self, mut rx: Receiver<ShardMessage<Q>>)
     where
         Q: Query + ReadQuery,
         T: GetPreparedStatement<Q> + GetCoalescingSender<Q>,
     {
-        let mut requests: HashMap<String, Vec<oneshot::Sender<Result<Q::Output, ScyllaxError>>>> = HashMap::new();
+        let mut requests: TaskRequestMap<Q> = HashMap::new();
 
         while let Some((query, tx)) = rx.recv().await {
             let key = query.shard_key();
@@ -80,8 +91,7 @@ impl<T: QueryCollection> Executor<T> {
             if let Some(senders) = requests.get_mut(&key) {
                 senders.push(tx);
             } else {
-                let mut senders = Vec::new();
-                senders.push(tx);
+                let senders = vec![tx];
                 requests.insert(key.clone(), senders);
 
                 // Execute the query here and send the result back

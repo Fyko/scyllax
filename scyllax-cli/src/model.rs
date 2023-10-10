@@ -3,7 +3,8 @@ use scyllax::prelude::*;
 
 create_query_collection!(
     MigrationQueries,
-    [GetLatestVersion, DeleteByVersion, UpsertMigration,]
+    [GetLatestVersion],
+    [DeleteByVersion, UpsertMigration]
 );
 
 #[entity]

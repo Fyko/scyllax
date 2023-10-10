@@ -10,7 +10,7 @@ async fn test_select(executor: Arc<Executor<PersonQueries>>) {
     };
 
     let _ = executor
-        .execute_read(&query)
+        .execute_read(query)
         .await
         .expect("person not found");
 }
@@ -29,7 +29,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let default_keyspace = std::env::var("SCYLLA_DEFAULT_KEYSPACE").ok();
 
     let session = create_session(known_nodes, default_keyspace).await?;
-    let executor = Arc::new(Executor::<PersonQueries>::new(session).await?);
+    let executor = Arc::new(Executor::<PersonQueries>::new(Arc::new(session)).await?);
 
     let start = std::time::Instant::now();
     for _ in 0..RUNS {

@@ -6,14 +6,14 @@
 // And T is the queries you can execute.
 // Then you can trait bound on T
 // Which gives you compile time check to see that your query is in the struct because that implies it has a Get<Q> trait impl on T.
-use crate::{error::ScyllaxError};
+use crate::{error::ScyllaxError, queries};
 use async_trait::async_trait;
 use scylla::{
     frame::value::{SerializeValuesError, SerializedValues},
     prepared_statement::PreparedStatement,
     Session, SessionBuilder, QueryResult, FromRow,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 #[allow(unused, dead_code, unused_variables)]
 use std::{future::Future, pin::Pin};
 use tokio::sync::mpsc::{Sender, Receiver};
@@ -90,7 +90,7 @@ trait QueryCollection {
     where
         Self: Sized;
 
-    fn register_tasks(self, executor: Executor<Self>) -> Self
+    fn register_tasks(self, executor: Arc<Executor<Self>>) -> Self
     where
         Self: Sized;
 
@@ -177,6 +177,7 @@ impl GetCoalescingSender<UserByEmailQuery> for UserQueries {
     }
 }
 
+#[derive(Debug, Clone)]
 #[allow(nonstandard_style, non_snake_case)]
 struct UserQueries {
     user_by_id_query: PreparedStatement,
@@ -196,10 +197,13 @@ impl QueryCollection for UserQueries {
         })
     }
 
-    fn register_tasks(mut self, executor: Executor<Self>) -> Self {
+    fn register_tasks(mut self, executor: Arc<Executor<Self>>) -> Self {
         self.user_by_id_task = {
-            let (tx, mut rx) = tokio::sync::mpsc::channel(100);
-            tokio::spawn(executor.read_task::<UserByIdQuery>(rx));
+            let (tx, rx) = tokio::sync::mpsc::channel(100);
+            let ex = executor.clone();
+            tokio::spawn(async move {
+                ex.read_task::<UserByIdQuery>(rx).await;
+            });
             Some(tx)
         };
         
@@ -207,14 +211,18 @@ impl QueryCollection for UserQueries {
     }
 }
 
+#[derive(Debug, Clone)]
 struct Executor<T> {
-    session: Session,
+    session: Arc<Session>,
     queries: T,
 }
 
-impl<T: QueryCollection> Executor<T> {
-    async fn new(session: Session) -> Result<Self> {
+impl<T: QueryCollection + Clone> Executor<T> {
+    async fn new(session: Arc<Session>) -> Result<Self> {
         let queries = T::new(&session).await?;
+        let executor = Arc::new(Self { session: session.clone(), queries });
+
+        let queries = executor.queries.clone().register_tasks(executor);
         let executor = Self { session, queries };
 
         Ok(executor)
@@ -287,7 +295,7 @@ impl<T: QueryCollection> Executor<T> {
 }
 
 async fn test() -> Result<()> {
-    let session = SessionBuilder::new().build().await.unwrap();
+    let session = Arc::new(SessionBuilder::new().build().await.unwrap());
 
     let queries = Executor::<UserQueries>::new(session).await.unwrap();
 
