@@ -90,7 +90,6 @@ pub(crate) fn upsert_impl(
         })
         .collect::<Vec<_>>();
 
-
     let ttl = if opt.ttl.unwrap_or(false) {
         quote! {
             #[doc = "The ttl of the row in seconds"]
@@ -241,8 +240,6 @@ fn build_query(
 
 #[cfg(test)]
 mod tests {
-    use syn::{parse::Parser, parse_str};
-
     use super::*;
 
     fn get_set_clauses() -> Vec<String> {
@@ -303,11 +300,16 @@ mod tests {
 
     #[test]
     fn test_insert() {
-        let query = build_query(&UpsertQueryOptions {
-            name: syn::parse_str::<syn::Ident>("UpdatePerson").unwrap(),
-            table: "person".to_string(),
-            ttl: Default::default(),
-        }, &"person".to_string(), vec![], get_where_clauses());
+        let query = build_query(
+            &UpsertQueryOptions {
+                name: syn::parse_str::<syn::Ident>("UpdatePerson").unwrap(),
+                table: "person".to_string(),
+                ttl: Default::default(),
+            },
+            &"person".to_string(),
+            vec![],
+            get_where_clauses(),
+        );
 
         assert_eq!(
             query,
@@ -317,11 +319,16 @@ mod tests {
 
     #[test]
     fn test_insert_ttl() {
-        let query = build_query(&UpsertQueryOptions {
-            name: syn::parse_str::<syn::Ident>("UpdatePerson").unwrap(),
-            table: "person".to_string(),
-            ttl: Some(true),
-        }, &"person".to_string(), vec![], get_where_clauses());
+        let query = build_query(
+            &UpsertQueryOptions {
+                name: syn::parse_str::<syn::Ident>("UpdatePerson").unwrap(),
+                table: "person".to_string(),
+                ttl: Some(true),
+            },
+            &"person".to_string(),
+            vec![],
+            get_where_clauses(),
+        );
 
         assert_eq!(
             query,

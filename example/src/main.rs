@@ -1,8 +1,13 @@
 //! Example
-use example::entities::{person::{
-    model::{PersonData, PersonKind, UpsertPerson, UpsertPersonWithTTL},
-    queries::{DeletePersonById, GetPeopleByIds, GetPersonByEmail, GetPersonById, PersonQueries},
-}, PersonEntity};
+use example::entities::{
+    person::{
+        model::{PersonData, PersonKind, UpsertPerson, UpsertPersonWithTTL},
+        queries::{
+            DeletePersonById, GetPeopleByIds, GetPersonByEmail, GetPersonById, PersonQueries,
+        },
+    },
+    PersonEntity,
+};
 use scyllax::prelude::*;
 use scyllax::{executor::create_session, util::v1_uuid};
 use tracing_subscriber::prelude::*;
@@ -30,9 +35,9 @@ async fn main() -> anyhow::Result<()> {
         "e01e84d6-414c-11ee-be56-0242ac120002",
         "e01e880a-414c-11ee-be56-0242ac120002",
     ]
-        .iter()
-        .map(|s| Uuid::parse_str(s).unwrap())
-        .collect::<Vec<_>>();
+    .iter()
+    .map(|s| Uuid::parse_str(s).unwrap())
+    .collect::<Vec<_>>();
     by_ids(&executor, ids).await?;
 
     let upsert_id = v1_uuid();
@@ -73,11 +78,12 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn by_email(executor: &Executor<PersonQueries>, email: String) -> anyhow::Result<PersonEntity> {
+async fn by_email(
+    executor: &Executor<PersonQueries>,
+    email: String,
+) -> anyhow::Result<PersonEntity> {
     let res = executor
-        .execute_read(&GetPersonByEmail {
-            email
-        })
+        .execute_read(&GetPersonByEmail { email })
         .await?
         .expect("person not found");
 
@@ -97,8 +103,13 @@ async fn by_id(executor: &Executor<PersonQueries>, id: Uuid) -> anyhow::Result<P
     Ok(res)
 }
 
-async fn by_ids(executor: &Executor<PersonQueries>, ids: Vec<Uuid>) -> anyhow::Result<Vec<PersonEntity>> {
-    let res = executor.execute_read(&GetPeopleByIds { ids, rowlimit: 10 }).await?;
+async fn by_ids(
+    executor: &Executor<PersonQueries>,
+    ids: Vec<Uuid>,
+) -> anyhow::Result<Vec<PersonEntity>> {
+    let res = executor
+        .execute_read(&GetPeopleByIds { ids, rowlimit: 10 })
+        .await?;
 
     tracing::info!("GetPeopleByIds returned: {:?}", res);
 
