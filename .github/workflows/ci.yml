@@ -85,6 +85,14 @@ jobs:
         run: |
           sudo sh -c "echo 2097152 >> /proc/sys/fs/aio-max-nr"
           docker compose -f ./test/docker-compose.yml up -d --wait
+      
+      - name: Install cqlsh
+        run: pip install -U cqlsh
+
+      - name: Create migration keyspace
+        env:
+          CQLSH_HOST: 172.42.0.2
+        run: cqlsh -f ./test/migration.cql
 
       - name: Run Migrations
         env:
