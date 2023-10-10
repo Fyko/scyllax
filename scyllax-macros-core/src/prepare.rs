@@ -1,5 +1,6 @@
 //! This module contains the `prepare_queries!` macro.
 use proc_macro2::TokenStream;
+use convert_case::{Case, Casing};
 use quote::{quote, ToTokens, format_ident};
 use syn::{
     parse::{Parse, ParseStream},
@@ -74,60 +75,70 @@ pub fn expand(input: TokenStream) -> TokenStream {
 
     let prepared_statements = queries.iter().map(|field| {
         let doc = format!("The prepared statement for `{}`.", field);
+        let prop = format_ident!("{}", field.to_string().to_case(Case::Snake));
         quote! {
             #[allow(non_snake_case)]
             #[doc = #doc]
-            pub #field: scylla_reexports::PreparedStatement,
+            pub #prop: scylla_reexports::PreparedStatement,
         }
     });
 
     let get_prepared_statements = queries.iter().map(|field| {
+        let prop = format_ident!("{}", field.to_string().to_case(Case::Snake));
         quote! {
             impl scyllax::prelude::GetPreparedStatement<#field> for #name {
                 #[doc = "Get a prepared statement."]
                 fn get(&self) -> &scyllax::prelude::scylla_reexports::PreparedStatement {
-                    &self.#field
+                    &self.#prop
                 }
             }
         }
     });
 
     let prepares = queries.iter().map(|field| {
+        let prop = format_ident!("{}", field.to_string().to_case(Case::Snake));
         quote! {
-            #field: scyllax::prelude::prepare_query(&session, #field::query()).await?,
+            #prop: scyllax::prelude::prepare_query(&session, #field::query()).await?,
         }
     });
 
     let coalescing_senders = read_queries.iter().map(|field| {
         let doc = format!("The task for `{}`.", field);
-        let field = format_ident!("{}_task", field).to_token_stream();
+        let prop = format_ident!("{}_task", field.to_string().to_case(Case::Snake)).to_token_stream();
         quote! {
             #[allow(non_snake_case)]
             #[doc = #doc]
-            pub #field: tokio::sync::mpsc::Sender<scyllax::executor::ShardMessage<'_, #field>>,
+            pub #prop: Option<tokio::sync::mpsc::Sender<scyllax::executor::ShardMessage<#field>>>,
         }
     });
 
     let get_coalescing_senders = read_queries.iter().map(|field| {
+        let prop = format_ident!("{}_task", field.to_string().to_case(Case::Snake)).to_token_stream();
         quote! {
             impl scyllax::prelude::GetCoalescingSender<#field> for #name {
                 #[doc = "Get a task."]
-                fn get(&self) -> &tokio::sync::mpsc::Sender<scyllax::executor::ShardMessage<'_, #field>> {
-                    &self.#field
+                fn get(&self) -> &tokio::sync::mpsc::Sender<scyllax::executor::ShardMessage<#field>> {
+                    &self.#prop
                 }
             }
         }
     });
 
-    let create_senders = read_queries.iter().map(|field| {
-        let field = format_ident!("{}_task", field);
+    let create_empty_senders = read_queries.iter().map(|field| {
+        let prop = format_ident!("{}_task", field.to_string().to_case(Case::Snake)).to_token_stream();
         quote! {
-            #field: {
+            #prop: None,
+        }
+    });
+
+    let create_senders = read_queries.iter().map(|field| {
+        let prop = format_ident!("{}_task", field.to_string().to_case(Case::Snake)).to_token_stream();
+        quote! {
+            self.#prop = {
                 let (tx, rx) = tokio::sync::mpsc::channel(100);
-                let queries = self.clone();
-                tokio::spawn(self.read_task(rx));
+                tokio::spawn(executor.read_task::<#field>(rx));
                 tx
-            },
+            };
         }
     });
 
@@ -144,9 +155,15 @@ pub fn expand(input: TokenStream) -> TokenStream {
         impl scyllax::prelude::QueryCollection for #name {
             async fn new(session: &scylla::Session) -> Result<Self, scyllax::prelude::ScyllaxError> {
                 Ok(Self {
-                    #(#prepares)*,
-                    #(#create_senders)*
+                    #(#prepares)*
+                    #(#create_empty_senders)*
                 })
+            }
+
+            fn register_tasks(mut self, executor: &scyllax::prelude::Executor<Self>) -> Self {
+                #(#create_senders)*
+                
+                self
             }
         }
 

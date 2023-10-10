@@ -41,7 +41,7 @@ pub mod entity;
 pub mod error;
 pub mod executor;
 pub mod maybe_unset;
-// mod playground;
+mod playground;
 pub mod prelude;
 pub mod queries;
 pub mod rows;

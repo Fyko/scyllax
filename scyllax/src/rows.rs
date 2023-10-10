@@ -16,7 +16,7 @@ macro_rules! match_row {
                     SingleRowTypedError::BadNumberOfRows(_) => Ok(None),
                     _ => {
                         tracing::error!("err: {:?}", err);
-                        Err(scyllax::prelude::ScyllaxError::SingleRowTyped(err))
+                        Err(scyllax::error::ScyllaxError::SingleRowTyped(err))
                     }
                 }
             }

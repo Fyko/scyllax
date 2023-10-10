@@ -4,7 +4,8 @@ use uuid::Uuid;
 
 create_query_collection!(
     PersonLoginQueries,
-    [GetPersonLoginById, DeletePersonLoginById, UpsertPersonLogin,]
+    [GetPersonLoginById],
+    [DeletePersonLoginById, UpsertPersonLogin]
 );
 
 /// Get a [`super::model::PersonLoginEntity`] by its [`uuid::Uuid`]

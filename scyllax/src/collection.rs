@@ -1,6 +1,4 @@
-use std::sync::mpsc;
-
-use crate::{error::ScyllaxError, executor::{GetPreparedStatement, GetCoalescingSender, ShardMessage}, queries::Query, prelude::ReadQuery};
+use crate::{error::ScyllaxError, executor::{Executor, GetPreparedStatement, GetCoalescingSender, ShardMessage}, queries::Query, prelude::ReadQuery};
 use async_trait::async_trait;
 use scylla::{prepared_statement::PreparedStatement, Session};
 use tokio::sync::mpsc::Sender;
@@ -9,6 +7,10 @@ use tokio::sync::mpsc::Sender;
 #[async_trait]
 pub trait QueryCollection {
     async fn new(session: &Session) -> Result<Self, ScyllaxError>
+    where
+        Self: Sized;
+
+    fn register_tasks(&mut self, executor: Executor<Self>) -> Self
     where
         Self: Sized;
 

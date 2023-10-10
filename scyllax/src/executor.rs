@@ -32,7 +32,7 @@ pub trait GetPreparedStatement<T: Query> {
 }
 
 pub trait GetCoalescingSender<T: Query + ReadQuery> {
-    fn get(&self) -> &Sender<ShardMessage<'_, T>>;
+    fn get(&self) -> &Sender<ShardMessage<T>>;
 }
 
 #[derive(Debug)]
@@ -41,16 +41,17 @@ pub struct Executor<T> {
     queries: T,
 }
 
-pub type ShardMessage<'a, Q: Query + ReadQuery> = (&'a Q, oneshot::Sender<Result<Q::Output, ScyllaxError>>);
+pub type ShardMessage<Q> = (Q, oneshot::Sender<Result<<Q as ReadQuery>::Output, ScyllaxError>>);
 
 impl<T: QueryCollection> Executor<T> {
     pub async fn new(session: Session) -> Result<Self, ScyllaxError> {
         let queries = T::new(&session).await?;
+        let executor = Self { session, queries };
 
-        Ok(Self { session, queries })
+        Ok(executor)
     }
 
-    pub async fn execute_read<Q>(&self, query: &Q) -> Result<Q::Output, ScyllaxError>
+    pub async fn execute_read<Q>(&self, query: Q) -> Result<Q::Output, ScyllaxError>
     where
         Q: Query + ReadQuery,
         T: GetPreparedStatement<Q> + GetCoalescingSender<Q>,
@@ -66,7 +67,7 @@ impl<T: QueryCollection> Executor<T> {
         }
     }
 
-    async fn read_task<Q>(&self, mut rx: Receiver<ShardMessage<'_, Q>>)
+    async fn read_task<Q>(&self, mut rx: Receiver<ShardMessage<Q>>)
     where
         Q: Query + ReadQuery,
         T: GetPreparedStatement<Q> + GetCoalescingSender<Q>,
