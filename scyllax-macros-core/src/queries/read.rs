@@ -1,41 +1,56 @@
-use darling::{export::NestedMeta, FromMeta};
+use darling::{ast, FromDeriveInput, FromField};
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use scyllax_parser::{select::parse_select, SelectQuery, Value, Variable};
-use syn::ItemStruct;
+use syn::{DeriveInput, Ident, ItemStruct, Type};
 
 use crate::queries::impl_generic_query;
 
-#[derive(FromMeta)]
-pub(crate) struct SelectQueryOptions {
-    query: Option<String>,
-    query_nocheck: Option<String>,
-    return_type: syn::Type,
+#[derive(Debug, PartialEq, FromField)]
+#[darling(attributes(read_query))]
+pub struct ReadQueryDeriveVariable {
+    pub ident: Option<Ident>,
+    pub ty: Type,
+    #[darling(default)]
+    pub coalesce_shard_key: bool,
 }
 
-pub fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
-    let attr_args = match NestedMeta::parse_meta_list(args.clone()) {
-        Ok(args) => args,
-        Err(e) => return darling::Error::from(e).write_errors(),
-    };
+#[derive(Debug, PartialEq, FromDeriveInput)]
+#[darling(attributes(read_query), supports(struct_named))]
+pub struct ReadQueryDerive {
+    pub ident: syn::Ident,
+    pub data: ast::Data<(), ReadQueryDeriveVariable>,
 
-    let args = match SelectQueryOptions::from_list(&attr_args) {
-        Ok(o) => o,
-        Err(e) => return e.write_errors(),
-    };
+    #[darling(default)]
+    pub query: Option<String>,
+    #[darling(default)]
+    pub query_nocheck: Option<String>,
+    pub return_type: syn::Type,
+}
 
-    if args.query.is_none() && args.query_nocheck.is_none() {
-        return syn::Error::new_spanned(item, "Either query or query_nocheck must be specified")
-            .to_compile_error();
-    }
-
-    let return_type = args.return_type;
-
-    let input: ItemStruct = match syn::parse2(item.clone()) {
+pub fn expand(input: TokenStream) -> TokenStream {
+    let parsed_input: DeriveInput = match syn::parse2(input.clone()) {
         Ok(it) => it,
         Err(e) => return e.to_compile_error(),
     };
-    let struct_ident = &input.ident;
+
+    let args = match ReadQueryDerive::from_derive_input(&parsed_input) {
+        Ok(i) => i,
+        Err(e) => return e.write_errors(),
+    };
+    let fields = args
+        .data
+        .take_struct()
+        .expect("Should never be enum")
+        .fields;
+
+    if args.query.is_none() && args.query_nocheck.is_none() {
+        return syn::Error::new_spanned(input, "Either query or query_nocheck must be specified")
+            .to_compile_error();
+    }
+    let return_type = args.return_type;
+    let struct_ident = args.ident;
+    let r#struct = syn::parse2::<ItemStruct>(input.clone()).unwrap();
 
     // trimmed return_type
     // eg: Vec<OrgEntity> -> OrgEntity
@@ -82,7 +97,7 @@ pub fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
 
     // query parsing
     let query = if let Some(query) = args.query {
-        match parse_query(&input, &query) {
+        match parse_query(&r#struct, &query) {
             Ok(_) => (),
             Err(e) => return e.to_compile_error(),
         };
@@ -136,12 +151,25 @@ pub fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
             .to_compile_error();
     };
 
-    let impl_query = impl_generic_query(&input, query, Some(&inner_entity_type));
+    let impl_query = impl_generic_query(&r#struct, query, Some(&inner_entity_type));
+
+    let shard_keys = fields
+        .iter()
+        .filter(|v| v.coalesce_shard_key)
+        .map(|v| v.ident.as_ref().unwrap())
+        .collect::<Vec<&Ident>>();
+    let shard_key = if !shard_keys.is_empty() {
+        // create a redis-like shard key, joining all shard keys with a colon
+        quote! {
+            [#(self.#shard_keys.to_string()),*].join(":")
+        }
+    } else {
+        quote! {
+            String::new()
+        }
+    };
 
     quote! {
-        #[derive(scylla::ValueList, std::fmt::Debug, std::clone::Clone, PartialEq, Hash)]
-        #input
-
         #impl_query
 
         #[scyllax::prelude::async_trait]
@@ -152,6 +180,10 @@ pub fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
                 Result<Self::Output, scyllax::prelude::ScyllaxError>
             {
                 #parser
+            }
+
+            fn shard_key(&self) -> String {
+                #shard_key
             }
         }
     }

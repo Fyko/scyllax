@@ -9,6 +9,7 @@ pub use crate::{
     util::v1_uuid,
 };
 pub use async_trait::async_trait;
+pub use scylla_reexports::*;
 pub use scyllax_macros::*;
 
 pub mod scylla_reexports {

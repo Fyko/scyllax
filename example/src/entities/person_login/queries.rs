@@ -9,6 +9,7 @@ create_query_collection!(
 );
 
 /// Get a [`super::model::PersonLoginEntity`] by its [`uuid::Uuid`]
+#[derive(Debug, Clone, PartialEq, ValueList, ReadQuery)]
 #[read_query(
     query = "select * from person_login where id = :id limit 1",
     return_type = "super::model::PersonLoginEntity"

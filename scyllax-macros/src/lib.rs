@@ -30,9 +30,9 @@ use scyllax_macros_core::{entity, json, prepare, queries, r#enum};
 /// executor.execute_select(GetPeopleByIds { ids, limit }).await?;
 /// // -> Vec<PersonEntity>
 /// ```
-#[proc_macro_attribute]
-pub fn read_query(args: TokenStream, input: TokenStream) -> TokenStream {
-    queries::read::expand(args.into(), input.into()).into()
+#[proc_macro_derive(ReadQuery, attributes(read_query))]
+pub fn read_query(input: TokenStream) -> TokenStream {
+    queries::read::expand(input.into()).into()
 }
 
 /// Apply this attribute to a struct to generate a write query.

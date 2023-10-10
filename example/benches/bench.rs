@@ -1,23 +1,27 @@
 //! benches
-use example::entities::person::{self, queries::PersonQueries};
-use scyllax::prelude::{create_session, Executor};
 use std::sync::Arc;
+
+use example::entities::{
+    person::{self, queries::PersonQueries},
+    PersonEntity,
+};
+use scyllax::prelude::{create_session, Executor};
 use tracing_subscriber::prelude::*;
 
-async fn test_select(executor: Arc<Executor<PersonQueries>>) {
+async fn test_select(executor: Arc<Executor<PersonQueries>>) -> Option<PersonEntity> {
     let query = person::queries::GetPersonByEmail {
         email: "foo1@scyllax.local".to_string(),
     };
 
-    let _ = executor
+    executor
         .execute_read(query)
         .await
-        .expect("person not found");
+        .expect("person not found")
 }
 
-const RUNS: usize = 100_000;
+const RUNS: usize = 1000;
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread", worker_threads = 10)]
 async fn main() -> Result<(), anyhow::Error> {
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::from_default_env())
@@ -30,13 +34,20 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let session = create_session(known_nodes, default_keyspace).await?;
     let executor = Arc::new(Executor::<PersonQueries>::new(Arc::new(session)).await?);
-
     let start = std::time::Instant::now();
-    for _ in 0..RUNS {
-        test_select(executor.clone()).await;
-    }
-    let end = std::time::Instant::now();
 
+    let futures: Vec<_> = (0..RUNS)
+        .map(|_| {
+            let executor = executor.clone();
+            tokio::spawn(test_select(executor))
+        })
+        .collect();
+    let mut res = Vec::with_capacity(futures.len());
+    for f in futures.into_iter() {
+        res.push(f.await.unwrap());
+    }
+
+    let end = std::time::Instant::now();
     println!("elapsed: {:#?}", end - start);
     println!("per run: {:?}", (end - start) / RUNS as u32);
 
