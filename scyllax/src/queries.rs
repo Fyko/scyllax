@@ -21,6 +21,12 @@ pub trait Query {
 pub trait ReadQuery {
     type Output: Clone + std::fmt::Debug + Send + Sync;
 
+    /// Returns the shard key for the query
+    fn shard_key(&self) -> String {
+        // TODO: impl me
+        String::new()
+    }
+
     /// Parses the response from the database
     async fn parse_response(rows: QueryResult) -> Result<Self::Output, ScyllaxError>;
 }

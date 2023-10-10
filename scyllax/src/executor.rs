@@ -1,4 +1,5 @@
 //! The `scyllax` [`Executor`] processes queries.
+use std::{collections::HashMap, sync::mpsc::RecvError};
 use crate::{
     collection::QueryCollection,
     error::ScyllaxError,
@@ -6,6 +7,8 @@ use crate::{
     queries::{Query, ReadQuery},
 };
 use scylla::{prepared_statement::PreparedStatement, QueryResult, Session, SessionBuilder};
+use tokio::sync::mpsc::{Sender, Receiver};
+use tokio::sync::oneshot;
 
 /// Creates a new [`CachingSession`] and returns it
 pub async fn create_session(
@@ -28,11 +31,17 @@ pub trait GetPreparedStatement<T: Query> {
     fn get(&self) -> &PreparedStatement;
 }
 
+pub trait GetCoalescingSender<T: Query + ReadQuery> {
+    fn get(&self) -> &Sender<ShardMessage<'_, T>>;
+}
+
 #[derive(Debug)]
 pub struct Executor<T> {
     pub session: Session,
     queries: T,
 }
+
+pub type ShardMessage<'a, Q: Query + ReadQuery> = (&'a Q, oneshot::Sender<Result<Q::Output, ScyllaxError>>);
 
 impl<T: QueryCollection> Executor<T> {
     pub async fn new(session: Session) -> Result<Self, ScyllaxError> {
@@ -44,14 +53,52 @@ impl<T: QueryCollection> Executor<T> {
     pub async fn execute_read<Q>(&self, query: &Q) -> Result<Q::Output, ScyllaxError>
     where
         Q: Query + ReadQuery,
-        T: GetPreparedStatement<Q>,
+        T: GetPreparedStatement<Q> + GetCoalescingSender<Q>,
     {
-        let statement = self.queries.get_prepared::<Q>();
-        let variables = query.bind()?;
+        let (response_tx, response_rx) = oneshot::channel();
+        let task = self.queries.get_task::<Q>();
 
-        let result = self.session.execute(statement, variables).await?;
+        task.send((query, response_tx)).await.unwrap();
 
-        Q::parse_response(result).await
+        match response_rx.await {
+            Ok(result) => result,
+            Err(e) => Err(ScyllaxError::ReceiverError(e)),
+        }
+    }
+
+    async fn read_task<Q>(&self, mut rx: Receiver<ShardMessage<'_, Q>>)
+    where
+        Q: Query + ReadQuery,
+        T: GetPreparedStatement<Q> + GetCoalescingSender<Q>,
+    {
+        let mut requests: HashMap<String, Vec<oneshot::Sender<Result<Q::Output, ScyllaxError>>>> = HashMap::new();
+
+        while let Some((query, tx)) = rx.recv().await {
+            let key = query.shard_key();
+
+            if let Some(senders) = requests.get_mut(&key) {
+                senders.push(tx);
+            } else {
+                let mut senders = Vec::new();
+                senders.push(tx);
+                requests.insert(key.clone(), senders);
+
+                // Execute the query here and send the result back
+                // let result = self.execute_read(&query).await;
+                let statement = self.queries.get_prepared::<Q>();
+                // FIXME: better error handling
+                let variables = query.bind().unwrap();
+                // FIXME: better error handling
+                let result = self.session.execute(statement, variables).await.unwrap();
+                let parsed = Q::parse_response(result).await;
+
+                if let Some(senders) = requests.remove(&key) {
+                    for tx in senders {
+                        let _ = tx.send(parsed.clone());
+                    }
+                }
+            }
+        }
     }
 
     pub async fn execute_write<Q>(&self, query: &Q) -> Result<QueryResult, ScyllaxError>

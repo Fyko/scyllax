@@ -1,6 +1,9 @@
-use crate::{error::ScyllaxError, executor::GetPreparedStatement, queries::Query};
+use std::sync::mpsc;
+
+use crate::{error::ScyllaxError, executor::{GetPreparedStatement, GetCoalescingSender, ShardMessage}, queries::Query, prelude::ReadQuery};
 use async_trait::async_trait;
 use scylla::{prepared_statement::PreparedStatement, Session};
+use tokio::sync::mpsc::Sender;
 
 /// A collection of prepared statements.
 #[async_trait]
@@ -14,6 +17,13 @@ pub trait QueryCollection {
         Self: GetPreparedStatement<T>,
     {
         <Self as GetPreparedStatement<T>>::get(self)
+    }
+
+    fn get_task<T: Query + ReadQuery>(&self) -> &Sender<ShardMessage<T>>
+    where
+        Self: GetCoalescingSender<T>,
+    {
+        <Self as GetCoalescingSender<T>>::get(self)
     }
 }
 

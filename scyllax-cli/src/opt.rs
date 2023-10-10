@@ -42,6 +42,12 @@ pub enum MigrateCommand {
         source: Source,
     },
 
+    /// Creates the `scyllax_migrations` keyspace.
+    Init {
+        #[clap(flatten)]
+        connect_opts: ConnectOpts,
+    },
+
     /// Run all pending migrations.
     Run {
         #[clap(flatten)]

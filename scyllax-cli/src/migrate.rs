@@ -276,3 +276,38 @@ pub async fn revert(migration_source: &str, connect_opts: ConnectOpts) -> anyhow
 
     Ok(())
 }
+
+/// Creates the `scyllax_migrations` table.
+pub async fn init(connect_opts: ConnectOpts) -> anyhow::Result<()> {
+    let create_keyspace = r#"create keyspace if not exists scyllax_migrations with replication = { 'class': 'LocalStrategy' };"#;
+    let create_table = r#"
+create table if not exists scyllax_migrations.migration (
+    bucket int,
+	version bigint,
+	description text,
+	installed_on timestamp,
+	success boolean,
+	checksum blob,
+	execution_time bigint,
+	primary key (bucket, version)
+);"#;
+
+    let session = create_session(
+        connect_opts.scylla_nodes.split(','),
+        Some(connect_opts.keyspace),
+    )
+    .await?;
+
+    for query in [create_keyspace, create_table] {
+        let prepared_query = Query::new(query);
+        session.query(prepared_query, ()).await?;
+    }
+
+    println!(
+        "{}\n{}",
+        style("scyllax_migrations keyspace and table created.").green(),
+        style("It's recommended you manually create these tables in production.")
+    );
+
+    Ok(())
+}

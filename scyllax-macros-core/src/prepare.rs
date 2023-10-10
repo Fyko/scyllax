@@ -1,6 +1,6 @@
 //! This module contains the `prepare_queries!` macro.
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{quote, ToTokens, format_ident};
 use syn::{
     parse::{Parse, ParseStream},
     ExprArray,
@@ -12,7 +12,9 @@ pub struct PrepareQueriesInput {
     /// The name of the struct to generate.
     pub name: syn::Ident,
     /// The queries to attach to the struct.
-    pub queries: Vec<syn::Ident>,
+    pub read_queries: Vec<syn::Ident>,
+    /// Write queries to attach to the struct.
+    pub write_queries: Vec<syn::Ident>,
 }
 
 impl Parse for PrepareQueriesInput {
@@ -20,7 +22,7 @@ impl Parse for PrepareQueriesInput {
         let name = input.parse()?;
         input.parse::<syn::Token![,]>()?;
 
-        let queries = input
+        let read_queries = input
             .parse::<ExprArray>()?
             .elems
             .iter()
@@ -33,7 +35,21 @@ impl Parse for PrepareQueriesInput {
             })
             .collect::<syn::Result<Vec<_>>>()?;
 
-        Ok(Self { name, queries })
+        input.parse::<syn::Token![,]>()?;
+        let write_queries = input
+            .parse::<ExprArray>()?
+            .elems
+            .iter()
+            .map(|expr| {
+                if let syn::Expr::Path(path) = expr {
+                    Ok(path.path.get_ident().unwrap().clone())
+                } else {
+                    Err(syn::Error::new_spanned(expr, "expected an identifier"))
+                }
+            })
+            .collect::<syn::Result<Vec<_>>>()?;
+
+        Ok(Self { name, read_queries, write_queries })
     }
 }
 
@@ -51,10 +67,12 @@ pub fn expand(input: TokenStream) -> TokenStream {
         Ok(args) => args,
         Err(e) => return e.to_compile_error(),
     };
-    let queries = args.queries;
+    let read_queries = args.read_queries;
+    let write_queries = args.write_queries;
+    let queries: Vec<&proc_macro2::Ident> = read_queries.iter().chain(write_queries.iter()).collect();
     let name = args.name;
 
-    let stmts = queries.iter().map(|field| {
+    let prepared_statements = queries.iter().map(|field| {
         let doc = format!("The prepared statement for `{}`.", field);
         quote! {
             #[allow(non_snake_case)]
@@ -63,7 +81,7 @@ pub fn expand(input: TokenStream) -> TokenStream {
         }
     });
 
-    let gets = queries.iter().map(|field| {
+    let get_prepared_statements = queries.iter().map(|field| {
         quote! {
             impl scyllax::prelude::GetPreparedStatement<#field> for #name {
                 #[doc = "Get a prepared statement."]
@@ -80,11 +98,45 @@ pub fn expand(input: TokenStream) -> TokenStream {
         }
     });
 
+    let coalescing_senders = read_queries.iter().map(|field| {
+        let doc = format!("The task for `{}`.", field);
+        let field = format_ident!("{}_task", field).to_token_stream();
+        quote! {
+            #[allow(non_snake_case)]
+            #[doc = #doc]
+            pub #field: tokio::sync::mpsc::Sender<scyllax::executor::ShardMessage<'_, #field>>,
+        }
+    });
+
+    let get_coalescing_senders = read_queries.iter().map(|field| {
+        quote! {
+            impl scyllax::prelude::GetCoalescingSender<#field> for #name {
+                #[doc = "Get a task."]
+                fn get(&self) -> &tokio::sync::mpsc::Sender<scyllax::executor::ShardMessage<'_, #field>> {
+                    &self.#field
+                }
+            }
+        }
+    });
+
+    let create_senders = read_queries.iter().map(|field| {
+        let field = format_ident!("{}_task", field);
+        quote! {
+            #field: {
+                let (tx, rx) = tokio::sync::mpsc::channel(100);
+                let queries = self.clone();
+                tokio::spawn(self.read_task(rx));
+                tx
+            },
+        }
+    });
+
     quote! {
         #[doc = "A collection of prepared statements."]
         #[allow(non_snake_case)]
         pub struct #name {
-            #(#stmts)*
+            #(#prepared_statements)*
+            #(#coalescing_senders)*
         }
 
         #[scyllax::prelude::async_trait]
@@ -92,11 +144,13 @@ pub fn expand(input: TokenStream) -> TokenStream {
         impl scyllax::prelude::QueryCollection for #name {
             async fn new(session: &scylla::Session) -> Result<Self, scyllax::prelude::ScyllaxError> {
                 Ok(Self {
-                    #(#prepares)*
+                    #(#prepares)*,
+                    #(#create_senders)*
                 })
             }
         }
 
-        #(#gets)*
+        #(#get_prepared_statements)*
+        #(#get_coalescing_senders)*
     }
 }

@@ -17,6 +17,7 @@ pub async fn run(opt: Opt) -> Result<()> {
                 source,
                 description,
             } => migrate::add(&source, &description).await?,
+            MigrateCommand::Init { connect_opts } => migrate::init(connect_opts).await?,
             MigrateCommand::Run {
                 source,
                 next,

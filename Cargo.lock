@@ -1564,6 +1564,7 @@ dependencies = [
  "scyllax-macros",
  "scyllax-macros-core",
  "thiserror",
+ "tokio",
  "tracing",
  "uuid",
 ]

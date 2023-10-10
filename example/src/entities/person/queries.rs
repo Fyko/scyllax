@@ -8,6 +8,8 @@ create_query_collection!(
         GetPersonById,
         GetPeopleByIds,
         GetPersonByEmail,
+    ],
+    [
         DeletePersonById,
         UpsertPerson,
         UpsertPersonWithTTL,
