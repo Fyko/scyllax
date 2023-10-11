@@ -1,6 +1,6 @@
 //! ScyllaX error types
 
-use tokio::sync::{oneshot::error::RecvError, mpsc::error::SendError};
+use tokio::sync::oneshot::error::RecvError;
 
 /// An error from ScyllaX
 #[derive(thiserror::Error, Clone, Debug)]

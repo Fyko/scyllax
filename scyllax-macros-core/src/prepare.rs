@@ -143,8 +143,8 @@ pub fn expand(input: TokenStream) -> TokenStream {
             format_ident!("{}_task", field.to_string().to_case(Case::Snake)).to_token_stream();
         quote! {
             self.#prop = {
-                let (task_transmitter, task_receiver) = mpsc::channel(128);
-                let (queryrunner_transmitter, queryrunner_receiver) = mpsc::channel(128);
+                let (task_transmitter, task_receiver) = mpsc::channel(2048);
+                let (queryrunner_transmitter, queryrunner_receiver) = mpsc::channel(2048);
 
                 let ex = executor.clone();
                 tokio::spawn(async move {

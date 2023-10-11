@@ -158,19 +158,23 @@ pub fn expand(input: TokenStream) -> TokenStream {
         .filter(|v| v.coalesce_shard_key)
         .map(|v| v.ident.as_ref().unwrap())
         .collect::<Vec<&Ident>>();
-    let shard_key = if !shard_keys.is_empty() {
-        // create a redis-like shard key, joining all shard keys with a colon
-        quote! {
-            [#(self.#shard_keys.to_string()),*].join(":")
-        }
+    let shard_key: Vec<TokenStream> = if !shard_keys.is_empty() {
+        shard_keys
+            .iter()
+            .map(|sk| quote! { self.#sk.hash(state); })
+            .collect::<Vec<TokenStream>>()
     } else {
-        quote! {
-            String::new()
-        }
+        vec![quote! {}]
     };
 
     quote! {
         #impl_query
+
+        impl std::hash::Hash for #struct_ident {
+            fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+                #(#shard_key)*
+            }
+        }
 
         #[scyllax::prelude::async_trait]
         impl scyllax::prelude::ReadQuery for #struct_ident {
@@ -180,10 +184,6 @@ pub fn expand(input: TokenStream) -> TokenStream {
                 Result<Self::Output, scyllax::prelude::ScyllaxError>
             {
                 #parser
-            }
-
-            fn shard_key(&self) -> String {
-                #shard_key
             }
         }
     }

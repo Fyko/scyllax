@@ -13,13 +13,16 @@ async fn test_select(executor: Arc<Executor<PersonQueries>>) -> Option<PersonEnt
         email: "foo1@scyllax.local".to_string(),
     };
 
-    executor
-        .execute_read(query)
-        .await
-        .expect("person not found")
+    match executor.execute_read(query).await {
+        Ok(res) => res,
+        Err(e) => {
+            tracing::error!("error: {:?}", e);
+            None
+        }
+    }
 }
 
-const RUNS: usize = 1;
+const RUNS: usize = 100;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 10)]
 async fn main() -> Result<(), anyhow::Error> {
@@ -43,7 +46,7 @@ async fn main() -> Result<(), anyhow::Error> {
         })
         .collect();
     let mut res = Vec::with_capacity(futures.len());
-    for f in futures.into_iter() {
+    for f in futures {
         res.push(f.await.unwrap());
     }
 
