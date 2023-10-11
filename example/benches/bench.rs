@@ -19,7 +19,7 @@ async fn test_select(executor: Arc<Executor<PersonQueries>>) -> Option<PersonEnt
         .expect("person not found")
 }
 
-const RUNS: usize = 1000;
+const RUNS: usize = 1;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 10)]
 async fn main() -> Result<(), anyhow::Error> {

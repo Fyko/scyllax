@@ -143,12 +143,20 @@ pub fn expand(input: TokenStream) -> TokenStream {
             format_ident!("{}_task", field.to_string().to_case(Case::Snake)).to_token_stream();
         quote! {
             self.#prop = {
-                let (tx, rx) = tokio::sync::mpsc::channel(100);
+                let (task_transmitter, task_receiver) = mpsc::channel(128);
+                let (queryrunner_transmitter, queryrunner_receiver) = mpsc::channel(128);
+
                 let ex = executor.clone();
                 tokio::spawn(async move {
-                    ex.read_task::<#field>(rx).await;
+                    ex.read_task::<#field>(task_receiver, queryrunner_transmitter).await;
                 });
-                Some(tx)
+
+                let ex = executor.clone();
+                tokio::spawn(async move {
+                    ex.read_query_runner::<#field>(queryrunner_receiver).await;
+                });
+
+                Some(task_transmitter)
             };
         }
     });
@@ -173,6 +181,7 @@ pub fn expand(input: TokenStream) -> TokenStream {
             }
 
             fn register_tasks(mut self, executor: std::sync::Arc<scyllax::prelude::Executor<Self>>) -> Self {
+                use tokio::sync::mpsc;
                 #(#create_senders)*
 
                 self

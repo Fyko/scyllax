@@ -51,9 +51,9 @@ type TaskRequestMap<Q> =
 type ReadQueryResult<Q> = Arc<Result<<Q as ReadQuery>::Output, ScyllaxError>>;
 
 pub struct QueryRunnerMessage<Q: ReadQuery> {
-    key: String,
-    query: Q,
-    response_rx: oneshot::Sender<ReadQueryResult<Q>>,
+    pub key: String,
+    pub query: Q,
+    pub response_rx: oneshot::Sender<ReadQueryResult<Q>>,
 }
 
 impl<T: QueryCollection + Clone + Send + Sync + 'static> Executor<T> {
@@ -79,7 +79,13 @@ impl<T: QueryCollection + Clone + Send + Sync + 'static> Executor<T> {
         let (response_tx, response_rx) = oneshot::channel();
         let task = self.queries.get_task::<Q>();
 
-        task.send((query, response_tx)).await.unwrap();
+        match task.send((query, response_tx)).await {
+            Ok(_) => (),
+            Err(e) => {
+                tracing::error!("error sending query to task: {:#?}", e);
+                return Err(ScyllaxError::NoRowsFound);
+            },
+        }
 
         match response_rx.await {
             Ok(result) => {
@@ -91,7 +97,7 @@ impl<T: QueryCollection + Clone + Send + Sync + 'static> Executor<T> {
     }
 
     /// the read task is responsible for coalescing requests
-    pub async fn read_task<Q>(&self, mut request_receiver: Receiver<ShardMessage<Q>>)
+    pub async fn read_task<Q>(&self, mut request_receiver: Receiver<ShardMessage<Q>>, query_runner: Sender<QueryRunnerMessage<Q>>)
     where
         Q: Query + ReadQuery + Send + Sync + 'static,
         T: GetPreparedStatement<Q> + GetCoalescingSender<Q>,
@@ -102,24 +108,33 @@ impl<T: QueryCollection + Clone + Send + Sync + 'static> Executor<T> {
         loop {
             tokio::select! {
                 Some((query, tx)) = request_receiver.recv() => {
+                    tracing::debug!("read_task recieved a request!");
                     let key = query.shard_key();
                     if let Some(senders) = requests.get_mut(&key) {
+                        tracing::debug!("key:{key} already has a request, adding to senders");
                         senders.push(tx);
                     } else {
+                        tracing::debug!("key:{key} is new! creating a new request");
                         requests.insert(key.clone(), vec![tx]);
-                        // let (response_rx, response_tx) = oneshot::channel();
+                        let (response_transmitter, response_receiver) = oneshot::channel();
                         // let _ = runner.send(QueryRunnerMessage { key: key.clone(), query, response_rx }).await;
+                        let _ = query_runner.send(QueryRunnerMessage { key: key.clone(), query, response_rx: response_transmitter });
 
-                        let handle = self.perform_read_query(query);
-                        join_set.spawn(async move {
-                            (key, handle.await)
+                        join_set.spawn(async {
+                            let res = match response_receiver.await {
+                                Ok(result) => result,
+                                Err(e) => Arc::new(Err(ScyllaxError::ReceiverError(e))),
+                            };
+                            tracing::debug!("joinset handle returned: {:#?}", res);
+
+                            (key, res)
                         });
                     }
                 },
                 Some(join_handle) = join_set.join_next() => {
+                    tracing::debug!("join set recieved a result!");
                     if let Ok((key, result)) = join_handle {
                         if let Some(senders) = requests.remove(&key) {
-                            let result = Arc::new(result);
                             for sender in senders {
                                 let _ = sender.send(result.clone());
                             }
@@ -132,18 +147,31 @@ impl<T: QueryCollection + Clone + Send + Sync + 'static> Executor<T> {
 
     /// this function does the requests themselves
     // async fn perform_read_query<Q>(session: Arc<Session>, statement: &PreparedStatement, query: Q) -> Result<<Q as ReadQuery>::Output, ScyllaxError>
-    async fn perform_read_query<Q>(&self, query: Q) -> Result<<Q as ReadQuery>::Output, ScyllaxError>
+    pub async fn read_query_runner<Q>(&self, mut query_receiver: Receiver<QueryRunnerMessage<Q>>)
     where
         Q: Query + ReadQuery + Send + Sync,
         T: GetPreparedStatement<Q> + GetCoalescingSender<Q>,
     {
-        let statement = self.queries.get_prepared::<Q>();
-        // FIXME: better error handling
-        let variables = query.bind().unwrap();
-        // FIXME: better error handling
-        let result = self.session.execute(statement, variables).await.unwrap();
+        if let Some(QueryRunnerMessage { query, response_rx, key }) = query_receiver.recv().await {
+            tracing::info!("running query for key: {key}");
+            let statement = self.queries.get_prepared::<Q>();
+            let variables = query.bind().unwrap();
+            let response = match self.session.execute(statement, variables).await {
+                Ok(response) => {
+                    tracing::info!("query executed successfully: {:?} rows", response.rows_num());
+                    response
+                },
+                Err(e) => {
+                    tracing::error!("error executing query: {:#?}", e);
+                    let _ = response_rx.send(Arc::new(Err(e.into())));
+                    return;
+                },
+            };
+            let parsed = Q::parse_response(response).await;
+            let result = Arc::new(parsed);
 
-        Q::parse_response(result).await
+            let _ = response_rx.send(result.clone());
+        }
     }
 
     pub async fn execute_write<Q>(&self, query: &Q) -> Result<QueryResult, ScyllaxError>
