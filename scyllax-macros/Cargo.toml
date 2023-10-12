@@ -13,4 +13,4 @@ readme = "../README.md"
 proc-macro = true
 
 [dependencies]
-scyllax-macros-core = { path = "../scyllax-macros-core", version = "0.1.9-alpha" }
+scyllax-macros-core = { path = "../scyllax-macros-core", version = "0.1.9-alpha.2" }

@@ -587,7 +587,7 @@ dependencies = [
 
 [[package]]
 name = "example"
-version = "0.1.9-alpha"
+version = "0.1.9-alpha.2"
 dependencies = [
  "anyhow",
  "criterion",
@@ -1566,7 +1566,7 @@ dependencies = [
 
 [[package]]
 name = "scyllax"
-version = "0.1.9-alpha"
+version = "0.1.9-alpha.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1584,7 +1584,7 @@ dependencies = [
 
 [[package]]
 name = "scyllax-cli"
-version = "0.1.9-alpha"
+version = "0.1.9-alpha.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1609,14 +1609,14 @@ dependencies = [
 
 [[package]]
 name = "scyllax-macros"
-version = "0.1.9-alpha"
+version = "0.1.9-alpha.2"
 dependencies = [
  "scyllax-macros-core",
 ]
 
 [[package]]
 name = "scyllax-macros-core"
-version = "0.1.9-alpha"
+version = "0.1.9-alpha.2"
 dependencies = [
  "anyhow",
  "convert_case",
@@ -1630,7 +1630,7 @@ dependencies = [
 
 [[package]]
 name = "scyllax-parser"
-version = "0.1.9-alpha"
+version = "0.1.9-alpha.2"
 dependencies = [
  "criterion",
  "nom",

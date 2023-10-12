@@ -16,5 +16,5 @@ convert_case = "0.6.0"
 darling = { version = "0.20", features = ["suggestions"] }
 proc-macro2 = "1"
 quote = "1"
-scyllax-parser = { path = "../scyllax-parser", version = "0.1.9-alpha" }
+scyllax-parser = { path = "../scyllax-parser", version = "0.1.9-alpha.2" }
 syn = { version = "2", features = ["full", "derive", "extra-traits"] }

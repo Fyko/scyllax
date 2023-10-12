@@ -16,8 +16,8 @@ getrandom = "0.2"
 mac_address = "1"
 once_cell = "1"
 scylla.workspace = true
-scyllax-macros = { version = "0.1.9-alpha", path = "../scyllax-macros" }
-scyllax-macros-core = { version = "0.1.9-alpha", path = "../scyllax-macros-core" }
+scyllax-macros = { version = "0.1.9-alpha.2", path = "../scyllax-macros" }
+scyllax-macros-core = { version = "0.1.9-alpha.2", path = "../scyllax-macros-core" }
 thiserror = "1"
 tokio.workspace = true
 tracing.workspace = true
