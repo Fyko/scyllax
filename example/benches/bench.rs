@@ -22,9 +22,9 @@ async fn test_select(executor: Arc<Executor<PersonQueries>>) -> Option<PersonEnt
     }
 }
 
-const RUNS: usize = 250;
+const RUNS: usize = 2;
 
-#[tokio::main(flavor = "multi_thread", worker_threads = 10)]
+#[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::from_default_env())

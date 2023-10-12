@@ -108,7 +108,7 @@ pub fn expand(input: TokenStream) -> TokenStream {
     });
 
     let coalescing_senders = read_queries.iter().map(|field| {
-        let doc = format!("The task for `{}`.", field);
+        let doc = format!("The coalescing read task for `{}`.", field);
         let prop =
             format_ident!("{}_task", field.to_string().to_case(Case::Snake)).to_token_stream();
         quote! {

@@ -11,7 +11,7 @@ use std::{
     hash::{Hash, Hasher},
     sync::Arc,
 };
-use tokio::sync::{oneshot, mpsc::error::TrySendError};
+use tokio::sync::{mpsc::error::TrySendError, oneshot};
 use tokio::{
     sync::mpsc::{Receiver, Sender},
     task::JoinSet,
@@ -53,13 +53,15 @@ type TaskRequestMap<Q> = HashMap<u64, Vec<oneshot::Sender<ReadQueryResult<Q>>>>;
 
 type ReadQueryResult<Q> = Result<<Q as ReadQuery>::Output, ScyllaxError>;
 
+/// A message sent to the [`Executor::read_query_runner`] task.
 pub struct QueryRunnerMessage<Q: ReadQuery> {
     pub hash: u64,
     pub query: Q,
     pub response_transmitter: oneshot::Sender<ReadQueryResult<Q>>,
 }
 
-impl<T: QueryCollection + Clone + Send + Sync + 'static> Executor<T> {
+impl<T: QueryCollection + Clone> Executor<T> {
+    /// Creates a new [`Executor`] from a [`Session`] and a [`QueryCollection`].
     pub async fn new(session: Arc<Session>) -> Result<Self, ScyllaxError> {
         let queries = T::new(&session).await?;
         let executor = Arc::new(Self {
@@ -74,6 +76,7 @@ impl<T: QueryCollection + Clone + Send + Sync + 'static> Executor<T> {
         Ok(executor)
     }
 
+    /// Executes a read query and returns the result.
     pub async fn execute_read<Q>(&self, query: Q) -> Result<Q::Output, ScyllaxError>
     where
         Q: Query + ReadQuery,
@@ -119,7 +122,6 @@ impl<T: QueryCollection + Clone + Send + Sync + 'static> Executor<T> {
             tokio::select! {
                 Some((query, tx)) = request_receiver.recv() => {
                     let query_type = std::any::type_name::<Q>();
-                    tracing::debug!("read_task recieved a request!");
                     let hash = Self::calculate_hash(&query);
 
                     if let Some(senders) = requests.get_mut(&hash) {
@@ -185,12 +187,12 @@ impl<T: QueryCollection + Clone + Send + Sync + 'static> Executor<T> {
             hash,
         }) = query_receiver.recv().await
         {
-            tracing::info!("running query for hash: {hash}");
+            tracing::debug!("running query for hash: {hash}");
             let statement = self.queries.get_prepared::<Q>();
             let variables = query.bind().unwrap();
             let response = match self.session.execute(statement, variables).await {
                 Ok(response) => {
-                    tracing::info!(
+                    tracing::debug!(
                         "query executed successfully: {:?} rows",
                         response.rows_num()
                     );
@@ -208,6 +210,7 @@ impl<T: QueryCollection + Clone + Send + Sync + 'static> Executor<T> {
         }
     }
 
+    /// Executes a write query and returns the [`scylla::QueryResult`].
     pub async fn execute_write<Q>(&self, query: &Q) -> Result<QueryResult, ScyllaxError>
     where
         Q: Query + WriteQuery,
