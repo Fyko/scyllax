@@ -11,7 +11,7 @@ use std::{
     hash::{Hash, Hasher},
     sync::Arc,
 };
-use tokio::sync::oneshot;
+use tokio::sync::{oneshot, mpsc::error::TrySendError};
 use tokio::{
     sync::mpsc::{Receiver, Sender},
     task::JoinSet,
@@ -140,7 +140,8 @@ impl<T: QueryCollection + Clone + Send + Sync + 'static> Executor<T> {
                                 ).await {
                                 Ok(_) => (),
                                 Err(e) => {
-                                    tracing::error!("error sending query to query runner: {:#?}", e);
+                                    let x = TrySendError::from(e);
+                                    tracing::error!("error sending query to query runner: {:?}", x);
                                 },
                             };
                         });

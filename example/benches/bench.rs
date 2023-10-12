@@ -22,7 +22,7 @@ async fn test_select(executor: Arc<Executor<PersonQueries>>) -> Option<PersonEnt
     }
 }
 
-const RUNS: usize = 100;
+const RUNS: usize = 250;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 10)]
 async fn main() -> Result<(), anyhow::Error> {
