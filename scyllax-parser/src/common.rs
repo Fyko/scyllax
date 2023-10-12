@@ -86,7 +86,7 @@ fn parse_string(input: &str) -> IResult<&str, String> {
     Ok((input, alpha.clone()))
 }
 
-fn parse_escaped(input: &str) -> IResult<&str, String> {
+pub fn parse_escaped(input: &str) -> IResult<&str, String> {
     let (input, alpha) = delimited(tag("\""), alpha1, tag("\""))(input)?;
     Ok((input, alpha.to_string()))
 }
@@ -97,12 +97,21 @@ fn parse_number(input: &str) -> IResult<&str, usize> {
     Ok((input, number.parse().unwrap()))
 }
 
-/// Parses an identifier on.. idk tbd
-pub fn parse_identifier(input: &str) -> IResult<&str, &str> {
+pub fn parse_string_escaped_rust_flavored_variable(input: &str) -> IResult<&str, String> {
+    let (input, alpha) = delimited(tag("\""), parse_rust_flavored_variable, tag("\""))(input)?;
+    Ok((input, alpha.to_string()))
+}
+
+pub fn parse_rust_flavored_variable(input: &str) -> IResult<&str, &str> {
     recognize(pair(
         alt((alpha1, tag("_"))),
         many0_count(alt((alphanumeric1, tag("_")))),
     ))(input)
+}
+
+/// Parses an identifier on.. idk tbd
+pub fn parse_identifier(input: &str) -> IResult<&str, &str> {
+    parse_rust_flavored_variable(input)
 }
 
 /// Parses a [`Variable::Placeholder`]

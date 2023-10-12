@@ -26,16 +26,18 @@
 use nom::{
     branch::alt,
     bytes::complete::{tag, tag_no_case},
-    character::complete::{alpha1, alphanumeric1, multispace0, multispace1},
-    combinator::{map, opt, recognize},
+    character::complete::{multispace0, multispace1},
+    combinator::{map, opt},
     error::Error,
-    multi::{many0_count, separated_list0},
-    sequence::pair,
+    multi::separated_list0,
     Err, IResult,
 };
 
 use crate::{
-    common::{parse_identifier, parse_limit_clause},
+    common::{
+        parse_identifier, parse_limit_clause, parse_rust_flavored_variable,
+        parse_string_escaped_rust_flavored_variable,
+    },
     r#where::{parse_where_clause, WhereClause},
     Column, Value,
 };
@@ -79,11 +81,15 @@ fn parse_asterisk(input: &str) -> IResult<&str, Column> {
     Ok((input, Column::Asterisk))
 }
 
-fn parse_table_name(input: &str) -> IResult<&str, &str> {
-    recognize(pair(
-        alt((alpha1, tag("_"))),
-        many0_count(alt((alphanumeric1, tag("_")))),
-    ))(input)
+fn parse_table_name(input: &str) -> IResult<&str, String> {
+    let (input, table) = alt((
+        map(parse_string_escaped_rust_flavored_variable, |x| {
+            format!("\"{x}\"")
+        }),
+        map(parse_rust_flavored_variable, |x: &str| x.to_string()),
+    ))(input)?;
+
+    Ok((input, table.clone()))
 }
 
 /// Parses a select query
@@ -106,7 +112,7 @@ pub fn parse_select(input: &str) -> IResult<&str, SelectQuery> {
     Ok((
         input,
         SelectQuery {
-            table: table.to_string(),
+            table,
             columns,
             condition: condition.unwrap_or_default(),
             limit,

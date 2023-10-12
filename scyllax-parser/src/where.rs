@@ -14,7 +14,10 @@ use nom::{
     IResult,
 };
 
-use crate::common::{parse_identifier, parse_value, Column, Value};
+use crate::common::{
+    parse_rust_flavored_variable, parse_string_escaped_rust_flavored_variable, parse_value, Column,
+    Value,
+};
 
 /// Parses a where clause with the following format:
 ///
@@ -63,9 +66,20 @@ pub enum ComparisonOperator {
     ContainsKey,
 }
 
+fn parse_where_column(input: &str) -> IResult<&str, String> {
+    let (input, col) = alt((
+        map(parse_string_escaped_rust_flavored_variable, |x| {
+            format!("\"{x}\"")
+        }),
+        map(parse_rust_flavored_variable, |x: &str| x.to_string()),
+    ))(input)?;
+
+    Ok((input, col.clone()))
+}
+
 /// Parses a single where condition
 fn parse_where_condition(input: &str) -> IResult<&str, WhereClause> {
-    let (input, column) = parse_identifier(input)?;
+    let (input, column) = parse_where_column(input)?;
     let (input, _) = multispace1(input)?;
     let (input, operator) = parse_comparison_operator(input)?;
     let (input, _) = multispace1(input)?;
@@ -74,7 +88,7 @@ fn parse_where_condition(input: &str) -> IResult<&str, WhereClause> {
     Ok((
         input,
         WhereClause {
-            column: Column::Identifier(column.to_string()),
+            column: Column::Identifier(column),
             operator,
             value,
         },
@@ -102,6 +116,35 @@ mod test {
     use super::*;
     use crate::*;
     use pretty_assertions::assert_eq;
+
+    #[test]
+    fn test_funky_casing() {
+        assert_eq!(
+            parse_where_clause(
+                r#"where "userId" = ? and "actionOperation" = ? and "timeBucket" = ?"#
+            ),
+            Ok((
+                "",
+                vec![
+                    WhereClause {
+                        column: Column::Identifier(r#""userId""#.to_string()),
+                        operator: ComparisonOperator::Equal,
+                        value: Value::Variable(Variable::Placeholder)
+                    },
+                    WhereClause {
+                        column: Column::Identifier(r#""actionOperation""#.to_string()),
+                        operator: ComparisonOperator::Equal,
+                        value: Value::Variable(Variable::Placeholder)
+                    },
+                    WhereClause {
+                        column: Column::Identifier(r#""timeBucket""#.to_string()),
+                        operator: ComparisonOperator::Equal,
+                        value: Value::Variable(Variable::Placeholder)
+                    }
+                ]
+            ))
+        );
+    }
 
     #[test]
     fn test_parse_single_where_clause() {
