@@ -3,12 +3,13 @@ pub use crate::{
     collection::{prepare_query, QueryCollection},
     entity::EntityExt,
     error::{BuildUpsertQueryError, ScyllaxError},
-    executor::{create_session, Executor, GetPreparedStatement},
+    executor::{create_session, Executor, GetCoalescingSender, GetPreparedStatement},
     maybe_unset::MaybeUnset,
     queries::{Query, ReadQuery, SerializedValuesResult, WriteQuery},
     util::v1_uuid,
 };
 pub use async_trait::async_trait;
+pub use scylla_reexports::*;
 pub use scyllax_macros::*;
 
 pub mod scylla_reexports {

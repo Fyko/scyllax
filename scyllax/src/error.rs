@@ -1,7 +1,9 @@
 //! ScyllaX error types
 
+use tokio::sync::oneshot::error::RecvError;
+
 /// An error from ScyllaX
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Clone, Debug)]
 pub enum ScyllaxError {
     /// A query error from Scylla
     #[error("Scylla Query error: {0}")]
@@ -22,10 +24,14 @@ pub enum ScyllaxError {
     /// An error when serializing values
     #[error("Failed to serialize values: {0}")]
     SerializedValues(#[from] scylla::frame::value::SerializeValuesError),
+
+    /// An error when using receivers
+    #[error("Receiver error: {0}")]
+    ReceiverError(#[from] RecvError),
 }
 
 /// An error when building an upsert query
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Clone, Debug)]
 pub enum BuildUpsertQueryError {
     /// There were too many values (usually ignored since we don't set a capacity on [`scylla::frame::value::SerializedValues`]])
     #[error("Too many values when adding {field}")]

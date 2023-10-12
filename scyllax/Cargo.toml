@@ -19,5 +19,6 @@ scylla.workspace = true
 scyllax-macros = { version = "0.1.9-alpha", path = "../scyllax-macros" }
 scyllax-macros-core = { version = "0.1.9-alpha", path = "../scyllax-macros-core" }
 thiserror = "1"
+tokio.workspace = true
 tracing.workspace = true
 uuid.workspace = true

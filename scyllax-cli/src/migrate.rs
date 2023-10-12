@@ -3,7 +3,10 @@ use console::style;
 use scylla::{frame::value::Timestamp, query::Query, statement::SerialConsistency};
 use scyllax::executor::{create_session, Executor};
 use sha2::{Digest, Sha384};
-use std::fs::{self, File};
+use std::{
+    fs::{self, File},
+    sync::Arc,
+};
 use time::format_description;
 
 use crate::{
@@ -85,10 +88,10 @@ pub async fn run(
         Some(connect_opts.keyspace),
     )
     .await?;
-    let executor = Executor::<MigrationQueries>::new(session).await?;
+    let executor = Executor::<MigrationQueries>::new(Arc::new(session)).await?;
 
     let current_version = executor
-        .execute_read(&GetLatestVersion {})
+        .execute_read(GetLatestVersion {})
         .await?
         .map_or(-1, |v| v.version);
 
@@ -196,9 +199,9 @@ pub async fn revert(migration_source: &str, connect_opts: ConnectOpts) -> anyhow
         Some(connect_opts.keyspace),
     )
     .await?;
-    let executor = Executor::<MigrationQueries>::new(session).await?;
+    let executor = Executor::<MigrationQueries>::new(Arc::new(session)).await?;
 
-    let current_version = if let Some(v) = executor.execute_read(&GetLatestVersion {}).await? {
+    let current_version = if let Some(v) = executor.execute_read(GetLatestVersion {}).await? {
         v.version
     } else {
         println!("No migrations to revert");
@@ -273,6 +276,41 @@ pub async fn revert(migration_source: &str, connect_opts: ConnectOpts) -> anyhow
             version: migration.version,
         })
         .await?;
+
+    Ok(())
+}
+
+/// Creates the `scyllax_migrations` table.
+pub async fn init(connect_opts: ConnectOpts) -> anyhow::Result<()> {
+    let create_keyspace = r#"create keyspace if not exists scyllax_migrations with replication = { 'class': 'LocalStrategy' };"#;
+    let create_table = r#"
+create table if not exists scyllax_migrations.migration (
+    bucket int,
+	version bigint,
+	description text,
+	installed_on timestamp,
+	success boolean,
+	checksum blob,
+	execution_time bigint,
+	primary key (bucket, version)
+);"#;
+
+    let session = create_session(
+        connect_opts.scylla_nodes.split(','),
+        Some(connect_opts.keyspace),
+    )
+    .await?;
+
+    for query in [create_keyspace, create_table] {
+        let prepared_query = Query::new(query);
+        session.query(prepared_query, ()).await?;
+    }
+
+    println!(
+        "{}\n{}",
+        style("scyllax_migrations keyspace and table created.").green(),
+        style("It's recommended you manually create these tables in production.")
+    );
 
     Ok(())
 }

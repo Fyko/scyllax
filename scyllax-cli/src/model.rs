@@ -3,7 +3,8 @@ use scyllax::prelude::*;
 
 create_query_collection!(
     MigrationQueries,
-    [GetLatestVersion, DeleteByVersion, UpsertMigration,]
+    [GetLatestVersion],
+    [DeleteByVersion, UpsertMigration]
 );
 
 #[entity]
@@ -21,6 +22,7 @@ pub struct MigrationEntity {
 }
 
 // get the latest version from the database
+#[derive(Debug, Clone, PartialEq, ValueList, ReadQuery)]
 #[read_query(
     query_nocheck = "select * from migration where bucket = 0 order by version desc limit 1",
     return_type = "MigrationEntity"

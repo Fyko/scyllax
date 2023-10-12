@@ -4,27 +4,24 @@ use uuid::Uuid;
 
 create_query_collection!(
     PersonQueries,
-    [
-        GetPersonById,
-        GetPeopleByIds,
-        GetPersonByEmail,
-        DeletePersonById,
-        UpsertPerson,
-        UpsertPersonWithTTL,
-    ]
+    [GetPersonById, GetPeopleByIds, GetPersonByEmail],
+    [DeletePersonById, UpsertPerson, UpsertPersonWithTTL]
 );
 
 /// Get a [`super::model::PersonEntity`] by its [`uuid::Uuid`]
+#[derive(Debug, Clone, PartialEq, ValueList, ReadQuery)]
 #[read_query(
     query = "select * from person where id = :id limit 1",
     return_type = "super::model::PersonEntity"
 )]
 pub struct GetPersonById {
     /// The [`uuid::Uuid`] of the [`super::model::PersonEntity`] to get
+    #[read_query(coalesce_shard_key)]
     pub id: Uuid,
 }
 
 /// Get many [`super::model::PersonEntity`] by many [`uuid::Uuid`]
+#[derive(Debug, Clone, PartialEq, ValueList, ReadQuery)]
 #[read_query(
     query = "select * from person where id in :ids limit :rowlimit",
     return_type = "Vec<super::model::PersonEntity>"
@@ -37,12 +34,14 @@ pub struct GetPeopleByIds {
 }
 
 /// Get a [`super::model::PersonEntity`] by its email address
+#[derive(Debug, Clone, PartialEq, ValueList, ReadQuery)]
 #[read_query(
     query = "select * from person_by_email where email = :email limit 1",
     return_type = "super::model::PersonEntity"
 )]
 pub struct GetPersonByEmail {
     /// The email address of the [`super::model::PersonEntity`] to get
+    #[read_query(coalesce_shard_key)]
     pub email: String,
 }
 
