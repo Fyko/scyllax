@@ -3,9 +3,10 @@ use nom::{
     branch::alt,
     bytes::complete::{tag, tag_no_case},
     character::complete::{alpha1, alphanumeric1, digit1},
-    combinator::map,
+    combinator::{map, recognize},
     error::{ErrorKind, ParseError},
-    sequence::delimited,
+    multi::many0_count,
+    sequence::{delimited, pair},
     IResult, InputLength,
 };
 
@@ -98,8 +99,10 @@ fn parse_number(input: &str) -> IResult<&str, usize> {
 
 /// Parses an identifier on.. idk tbd
 pub fn parse_identifier(input: &str) -> IResult<&str, &str> {
-    // Assuming identifiers are alphanumeric and start with an alphabet
-    alphanumeric1(input)
+    recognize(pair(
+        alt((alpha1, tag("_"))),
+        many0_count(alt((alphanumeric1, tag("_")))),
+    ))(input)
 }
 
 /// Parses a [`Variable::Placeholder`]
