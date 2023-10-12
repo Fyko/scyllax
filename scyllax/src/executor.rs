@@ -179,7 +179,7 @@ impl<T: QueryCollection + Clone + Send + Sync + 'static> Executor<T> {
         Q: Query + ReadQuery + Hash + Send + Sync,
         T: GetPreparedStatement<Q> + GetCoalescingSender<Q>,
     {
-        if let Some(QueryRunnerMessage {
+        while let Some(QueryRunnerMessage {
             query,
             response_transmitter,
             hash,
