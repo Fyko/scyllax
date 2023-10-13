@@ -26,6 +26,8 @@ pub struct ReadQueryDerive {
     #[darling(default)]
     pub query_nocheck: Option<String>,
     pub return_type: syn::Type,
+    #[darling(default)]
+    pub disable_coalescing: bool,
 }
 
 pub fn expand(input: TokenStream) -> TokenStream {
@@ -95,20 +97,6 @@ pub fn expand(input: TokenStream) -> TokenStream {
             .to_compile_error();
     };
 
-    // query parsing
-    let query = if let Some(query) = args.query {
-        match parse_query(&r#struct, &query) {
-            Ok(_) => (),
-            Err(e) => return e.to_compile_error(),
-        };
-
-        query
-    } else if let Some(query) = args.query_nocheck {
-        query
-    } else {
-        unreachable!()
-    };
-
     // if return_type is a Vec, return type is Vec<return_type>
     // if return_type is not a Vec, return type is Option<return_type>
     let impl_return_type = if let syn::Type::Path(path) = return_type.clone() {
@@ -133,22 +121,42 @@ pub fn expand(input: TokenStream) -> TokenStream {
     // if return_type is not a Vec, we need to use the macro scyllax:match_row!(res, return_type)
     // eg: Vec<OrgEntity> -> scyllax:match_rows!(res, OrgEntity)
     // eg: OrgEntity -> scyllax:match_row!(res, OrgEntity)
-    let parser = if let syn::Type::Path(path) = return_type.clone() {
+    let (vec_response, parser) = if let syn::Type::Path(path) = return_type.clone() {
         let last_segment = path.path.segments.last().unwrap();
         let ident = &last_segment.ident;
 
         if ident == "Vec" {
-            quote! {
-                scyllax::match_rows!(res, #inner_entity_type)
-            }
+            (
+                true,
+                quote! {
+                    scyllax::match_rows!(res, #inner_entity_type)
+                },
+            )
         } else {
-            quote! {
-                scyllax::match_row!(res, #path)
-            }
+            (
+                false,
+                quote! {
+                    scyllax::match_row!(res, #inner_entity_type)
+                },
+            )
         }
     } else {
         return syn::Error::new_spanned(return_type, "return_type must be a path")
             .to_compile_error();
+    };
+
+    // query parsing
+    let query = if let Some(query) = args.query {
+        match parse_query(&r#struct, &query, vec_response) {
+            Ok(_) => (),
+            Err(e) => return e.to_compile_error(),
+        };
+
+        query
+    } else if let Some(query) = args.query_nocheck {
+        query
+    } else {
+        unreachable!()
     };
 
     let impl_query = impl_generic_query(&r#struct, query, Some(&inner_entity_type));
@@ -164,7 +172,22 @@ pub fn expand(input: TokenStream) -> TokenStream {
             .map(|sk| quote! { self.#sk.hash(state); })
             .collect::<Vec<TokenStream>>()
     } else {
-        vec![quote! {}]
+        // by default, if there are no shard keys specified, do every field
+        fields
+            .iter()
+            .map(|v| v.ident.as_ref().unwrap())
+            .map(|sk| quote! { self.#sk.hash(state); })
+            .collect::<Vec<TokenStream>>()
+    };
+
+    let should_coalesce = if args.disable_coalescing {
+        quote! {
+            fn coalesce() -> bool {
+                false
+            }
+        }
+    } else {
+        quote! {}
     };
 
     quote! {
@@ -185,11 +208,17 @@ pub fn expand(input: TokenStream) -> TokenStream {
             {
                 #parser
             }
+
+            #should_coalesce
         }
     }
 }
 
-fn parse_query(input: &ItemStruct, query: &String) -> Result<SelectQuery, syn::Error> {
+fn parse_query(
+    input: &ItemStruct,
+    query: &String,
+    vec_response: bool,
+) -> Result<SelectQuery, syn::Error> {
     let (rest, parsed) = match parse_select(query) {
         Ok(parsed) => parsed,
         Err(e) => {
@@ -219,27 +248,6 @@ fn parse_query(input: &ItemStruct, query: &String) -> Result<SelectQuery, syn::E
         ));
     }
 
-    // only allow named OR placeholder variables in parsed.conditions, not both.
-    // let (has_named, has_placeholder) =
-    //     parsed
-    //         .condition
-    //         .iter()
-    //         .fold(
-    //             (false, false),
-    //             |(named, placeholder), condition| match condition.value {
-    //                 Value::Variable(Variable::NamedVariable(_)) => (true, placeholder),
-    //                 Value::Variable(Variable::Placeholder) => (named, true),
-    //                 _ => (named, placeholder),
-    //             },
-    //         );
-
-    // if has_named && has_placeholder {
-    //     return Err(syn::Error::new_spanned(
-    //         query.into_token_stream(),
-    //         "Cannot mix named and placeholder variables in query",
-    //     ));
-    // }
-
     // check that all variables in parsed.conditions match a field in the struct
     let misses = parsed
         .condition
@@ -268,6 +276,38 @@ fn parse_query(input: &ItemStruct, query: &String) -> Result<SelectQuery, syn::E
                 misses.join(", ")
             ),
         ));
+    }
+
+    if let Some(limit) = parsed.limit.as_ref() {
+        if vec_response {
+            // if the limit is hardcoded, throw a warning.
+            if let Value::Number(value) = limit {
+                return Err(syn::Error::new_spanned(
+                    query.into_token_stream(),
+                    format!(
+                        "Query contains a hard-coded `limit` variable ({}) but the return type is a Vec. Consider using a named variable: `pub row_limit: i32`",
+                        value
+                    ),
+                ));
+            }
+        }
+
+        if !vec_response {
+            // if the limit is set to a variable, throw a warning.
+            if let Value::Variable(variable) = limit {
+                let variable_type = match variable {
+                    Variable::NamedVariable(_) => "named",
+                    Variable::Placeholder => "placeholder",
+                };
+
+                return Err(syn::Error::new_spanned(
+                    query.into_token_stream(),
+                    format!(
+                        "Query contains a {variable_type} `limit` variable ({variable}) but the return type is not a Vec. Consider using a hardcoded value: `limit 1`.",
+                    ),
+                ));
+            }
+        }
     }
 
     Ok(parsed)

@@ -1,4 +1,6 @@
 //! common parsing functions
+use std::fmt::Display;
+
 use nom::{
     branch::alt,
     bytes::complete::{tag, tag_no_case},
@@ -29,6 +31,15 @@ pub enum Variable {
     Placeholder,
     /// The variable is a named variable
     NamedVariable(String),
+}
+
+impl Display for Variable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Variable::Placeholder => write!(f, "?"),
+            Variable::NamedVariable(ident) => write!(f, ":{}", ident),
+        }
+    }
 }
 
 /// Parses a [`Variable`]
