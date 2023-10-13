@@ -26,7 +26,7 @@ promptly = "0.3.1"
 scylla.workspace = true
 scyllax = { version = "0.1.9-alpha.4", path = "../scyllax" }
 serde_json = "1.0.107"
-serde = { version = "1.0.188", features = ["derive"] }
+serde = { version = "1.0.189", features = ["derive"] }
 tracing-subscriber.workspace = true
 glob = "0.3.1"
 tracing.workspace = true
