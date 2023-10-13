@@ -17,8 +17,8 @@ readme = "README.md"
 
 [workspace.dependencies]
 scyllax-macros = { verison = "0.1.8-alpha", path = "./scyllax-macros" }
-scyllax-macros-core = { verison = "0.1.9-alpha.2", path = "./scyllax-macros-core" }
-scyllax-parser = { verison = "0.1.9-alpha.2", path = "./scyllax-parser" }
+scyllax-macros-core = { verison = "0.1.9-alpha.3", path = "./scyllax-macros-core" }
+scyllax-parser = { verison = "0.1.9-alpha.3", path = "./scyllax-parser" }
 anyhow = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json", "tracing-log", "parking_lot"] }
