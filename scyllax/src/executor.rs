@@ -143,7 +143,7 @@ impl<T: QueryCollection + Clone> Executor<T> {
                                 Ok(_) => (),
                                 Err(e) => {
                                     let x = TrySendError::from(e);
-                                    tracing::error!("error sending query to query runner: {:?}", x);
+                                    tracing::error!(hash = hash, "error sending query to query runner: {:?}", x);
                                 },
                             };
                         });
@@ -153,7 +153,7 @@ impl<T: QueryCollection + Clone> Executor<T> {
                                 Ok(result) => result,
                                 Err(e) => Err(ScyllaxError::ReceiverError(e)),
                             };
-                            tracing::debug!("joinset handle returned: {:#?}", res);
+                            tracing::debug!(hash = hash, "joinset handle returned: {:#?}", res);
 
                             (hash, res)
                         });
@@ -168,7 +168,8 @@ impl<T: QueryCollection + Clone> Executor<T> {
                             }
                         }
                     }
-                }
+                },
+                else => {}
             }
         }
     }
