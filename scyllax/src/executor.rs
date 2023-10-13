@@ -211,7 +211,7 @@ impl<T: QueryCollection + Clone> Executor<T> {
     }
 
     /// Executes a write query and returns the [`scylla::QueryResult`].
-    pub async fn execute_write<Q>(&self, query: &Q) -> Result<QueryResult, ScyllaxError>
+    pub async fn execute_write<Q>(&self, query: Q) -> Result<QueryResult, ScyllaxError>
     where
         Q: Query + WriteQuery,
         T: GetPreparedStatement<Q>,

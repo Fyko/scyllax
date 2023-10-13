@@ -177,7 +177,7 @@ pub async fn run(
             checksum: checksum.into(),
             execution_time: 0.into(),
         };
-        executor.execute_write(&upsert_row).await?;
+        executor.execute_write(upsert_row).await?;
 
         // if we are running only the next migration, then we need to stop here
         if only_next {
@@ -272,7 +272,7 @@ pub async fn revert(migration_source: &str, connect_opts: ConnectOpts) -> anyhow
     );
 
     executor
-        .execute_write(&DeleteByVersion {
+        .execute_write(DeleteByVersion {
             version: migration.version,
         })
         .await?;

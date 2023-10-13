@@ -53,11 +53,11 @@ async fn main() -> anyhow::Result<()> {
         kind: MaybeUnset::Set(PersonKind::Parent),
         created_at: MaybeUnset::Unset,
     };
-    let res = executor.execute_write(&query).await?;
+    let res = executor.execute_write(query).await?;
     tracing::info!("UpsertPerson returned: {:?}", res);
 
     let delete = DeletePersonById { id: upsert_id };
-    let res = executor.execute_write(&delete).await?;
+    let res = executor.execute_write(delete).await?;
     tracing::info!("DeletePersonById returned: {:?}", res);
 
     let upsert_ttl_id = v1_uuid();
@@ -74,7 +74,7 @@ async fn main() -> anyhow::Result<()> {
         // 5 minutes
         set_ttl: 300,
     };
-    let res = executor.execute_write(&query).await?;
+    let res = executor.execute_write(query).await?;
     tracing::info!("UpsertPersonWithTTL returned: {:?}", res);
 
     Ok(())
