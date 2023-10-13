@@ -24,7 +24,7 @@ async-trait = "0.1"
 console = "0.15.7"
 promptly = "0.3.1"
 scylla.workspace = true
-scyllax = { path = "../scyllax" }
+scyllax = { version = "0.1.9-alpha.3", path = "../scyllax" }
 serde_json = "1.0.107"
 serde = { version = "1.0.188", features = ["derive"] }
 glob = "0.3.1"
