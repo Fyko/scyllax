@@ -23,6 +23,11 @@ pub trait ReadQuery {
 
     /// Parses the response from the database
     async fn parse_response(rows: QueryResult) -> Result<Self::Output, ScyllaxError>;
+
+    /// Whether or not the query should be coalesced
+    fn coalesce() -> bool {
+        true
+    }
 }
 
 /// Empty query implementation for all write queries. This is just a marker trait.

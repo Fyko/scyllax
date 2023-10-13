@@ -152,8 +152,13 @@ impl<T: QueryCollection + Clone> Executor<T> {
                                 ).await {
                                 Ok(_) => (),
                                 Err(e) => {
-                                    let x = TrySendError::from(e);
-                                    tracing::error!(hash = hash, "error sending query to query runner: {:?}", x);
+                                    let err = TrySendError::from(e);
+                                    tracing::error!(
+                                        hash = hash,
+                                        "error sending query to query runner: {:?}",
+                                        err
+                                    );
+                                    // todo: propagate error to requestor
                                 },
                             };
                         });
