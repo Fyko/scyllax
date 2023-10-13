@@ -13,14 +13,17 @@ use tokio::sync::mpsc::Sender;
 /// A collection of prepared statements.
 #[async_trait]
 pub trait QueryCollection {
+    /// Create a new collection of prepared statements.
     async fn new(session: &Session) -> Result<Self, ScyllaxError>
     where
         Self: Sized;
 
+    /// Register all tasks with the executor.
     fn register_tasks(self, executor: Arc<Executor<Self>>) -> Self
     where
         Self: Sized;
 
+    /// Gets a prepared statement from the collection.
     fn get_prepared<T: Query>(&self) -> &PreparedStatement
     where
         Self: GetPreparedStatement<T>,
@@ -28,6 +31,7 @@ pub trait QueryCollection {
         <Self as GetPreparedStatement<T>>::get(self)
     }
 
+    /// Gets a task from the collection.
     fn get_task<T: Query + ReadQuery>(&self) -> &Sender<ShardMessage<T>>
     where
         Self: GetCoalescingSender<T>,
@@ -36,11 +40,13 @@ pub trait QueryCollection {
     }
 }
 
+/// Prepares a query
 #[tracing::instrument(skip(session))]
 pub async fn prepare_query(
     session: &Session,
     query: String,
+    query_type: &str,
 ) -> Result<PreparedStatement, ScyllaxError> {
-    tracing::info!("preparing");
+    tracing::info!("preparing query");
     Ok(session.prepare(query).await?)
 }

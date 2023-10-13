@@ -103,7 +103,7 @@ pub fn expand(input: TokenStream) -> TokenStream {
     let prepares = queries.iter().map(|field| {
         let prop = format_ident!("{}", field.to_string().to_case(Case::Snake));
         quote! {
-            #prop: scyllax::prelude::prepare_query(&session, #field::query()).await?,
+            #prop: scyllax::prelude::prepare_query(&session, #field::query(), stringify!(#field)).await?,
         }
     });
 

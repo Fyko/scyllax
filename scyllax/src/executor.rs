@@ -42,15 +42,24 @@ pub trait GetCoalescingSender<T: Query + ReadQuery> {
     fn get(&self) -> &Sender<ShardMessage<T>>;
 }
 
+/// A [`Session`] and a collection of prepared statements.
+///
+/// The [`Executor`] is responsible for executing queries.
+///
+/// It coalesces read queries, adding waiters to a pending request. Write queries are executed immediately.
 #[derive(Debug, Clone)]
 pub struct Executor<T> {
     pub session: Arc<Session>,
     queries: T,
 }
 
+/// A message sent to the [`Executor::read_task`] task.
 pub type ShardMessage<Q> = (Q, oneshot::Sender<ReadQueryResult<Q>>);
+
+/// The local HashMap of requests being coalesced in a read task.
 type TaskRequestMap<Q> = HashMap<u64, Vec<oneshot::Sender<ReadQueryResult<Q>>>>;
 
+/// The result of a read query.
 type ReadQueryResult<Q> = Result<<Q as ReadQuery>::Output, ScyllaxError>;
 
 /// A message sent to the [`Executor::read_query_runner`] task.
@@ -99,6 +108,7 @@ impl<T: QueryCollection + Clone> Executor<T> {
         }
     }
 
+    /// Calculates a hash for a query.
     fn calculate_hash<Q: Hash>(t: &Q) -> u64 {
         let mut s = DefaultHasher::new();
         t.hash(&mut s);
@@ -114,10 +124,10 @@ impl<T: QueryCollection + Clone> Executor<T> {
         Q: Query + ReadQuery + Hash + Send + Sync + 'static,
         T: GetPreparedStatement<Q> + GetCoalescingSender<Q>,
     {
-        let mut requests: TaskRequestMap<Q> = HashMap::new();
         let mut join_set: JoinSet<_> = JoinSet::new();
         let query_runner = Arc::new(query_runner);
 
+        let mut requests: TaskRequestMap<Q> = HashMap::new();
         loop {
             tokio::select! {
                 Some((query, tx)) = request_receiver.recv() => {
