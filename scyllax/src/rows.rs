@@ -32,13 +32,27 @@ macro_rules! match_row {
 /// ```
 macro_rules! match_rows {
     ($res:ident, $type:ty) => {
-        match $res.rows_typed::<$type>() {
-            Ok(xs) => Ok(xs.filter_map(|x| x.ok()).collect::<Vec<$type>>()),
-            Err(e) => {
-                tracing::error!("err: {:?}", e);
+        match $res.rows() {
+            Ok(data) => {
+                use scylla::IntoTypedRows;
 
-                Ok(vec![])
+                let mut rows: Vec<$type> = Vec::with_capacity(data.len());
+                for (index, row) in data.into_typed::<$type>().enumerate() {
+                    match row {
+                        Ok(row) => rows.push(row),
+                        Err(e) => {
+                            tracing::error!(
+                                "failed to parse row {}: {}. will be excluded from result.",
+                                index,
+                                e
+                            );
+                        }
+                    }
+                }
+
+                Ok(rows)
             }
+            Err(e) => unreachable!("infallible, only used on read queries."),
         }
     };
 }
