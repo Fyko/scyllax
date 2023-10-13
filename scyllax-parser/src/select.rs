@@ -76,11 +76,13 @@ fn parse_select_clause(input: &str) -> IResult<&str, Vec<Column>> {
     )(input)
 }
 
+/// Parses the columns as `*`
 fn parse_asterisk(input: &str) -> IResult<&str, Column> {
     let (input, _) = tag("*")(input)?;
     Ok((input, Column::Asterisk))
 }
 
+/// Parses a table name, considering it may be wrapped in quotes.
 fn parse_table_name(input: &str) -> IResult<&str, String> {
     let (input, table) = alt((
         map(parse_string_escaped_rust_flavored_variable, |x| {

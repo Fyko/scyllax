@@ -12,7 +12,7 @@ pack() {
 
     tempdir=$(mktemp -d 2>/dev/null || mktemp -d -t tmp)
     out_dir=$(pwd)
-    package_name="$PROJECT_NAME-${GITHUB_REF/refs\/tags\//}-$TARGET"
+    package_name="${GITHUB_REF/refs\/tags\//}-$TARGET"
 
     if [[ $TARGET == "arm-unknown-linux-gnueabihf" ]]; then
         gcc_prefix="arm-linux-gnueabihf-"

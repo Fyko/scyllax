@@ -66,6 +66,7 @@ pub enum ComparisonOperator {
     ContainsKey,
 }
 
+/// Parses the column in a where statement, considering it may be wrapped in quotes.
 fn parse_where_column(input: &str) -> IResult<&str, String> {
     let (input, col) = alt((
         map(parse_string_escaped_rust_flavored_variable, |x| {

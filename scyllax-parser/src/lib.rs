@@ -45,6 +45,7 @@ pub enum Query {
     Delete(DeleteQuery),
 }
 
+/// Parse a CQL query.
 fn parse_query(input: &str) -> IResult<&str, Query> {
     nom::branch::alt((
         nom::combinator::map(select::parse_select, Query::Select),

@@ -7,7 +7,7 @@ use nom::{
     IResult,
 };
 
-// create an enum for the keywords
+/// A reserved keyword in CQL
 #[derive(Debug, PartialEq)]
 pub enum ReservedKeyword {
     Add,
@@ -81,7 +81,6 @@ pub enum ReservedKeyword {
     WriteTime,
 }
 
-// map(terminated(tag_no_case("ADD"), keyword_follow_char), |_| ReservedKeyword::Add),
 macro_rules! impl_keyword_parser {
     ($keyword:literal, $enum_member:ident) => {
         map(

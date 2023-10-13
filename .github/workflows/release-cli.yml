@@ -1,11 +1,11 @@
 # a lot of this was taken from Dan's project git-delta. thanks Dan!
 # MIT - Copyright 2020 Dan Davison (https://github.com/dandavison/delta/blob/master/etc/ci/before_deploy.sh)
-name: Continuous Deployment
+name: (CLI) Release
 
 on:
   push:
     tags:
-      - '*'
+      - 'scyllax-cli-*'
 
 jobs:
   publish_cli:

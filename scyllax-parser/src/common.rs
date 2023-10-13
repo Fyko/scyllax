@@ -46,6 +46,7 @@ pub fn parse_variable(input: &str) -> IResult<&str, Variable> {
     ))(input)
 }
 
+/// Parses a named variable in the format `:identifier`
 fn parse_named_variable(input: &str) -> IResult<&str, &str> {
     let (input, _) = tag(":")(input)?;
     parse_identifier(input)
@@ -86,6 +87,7 @@ fn parse_string(input: &str) -> IResult<&str, String> {
     Ok((input, alpha.clone()))
 }
 
+/// Parses an alpha string that's escaped with double quotes
 pub fn parse_escaped(input: &str) -> IResult<&str, String> {
     let (input, alpha) = delimited(tag("\""), alpha1, tag("\""))(input)?;
     Ok((input, alpha.to_string()))
@@ -97,11 +99,13 @@ fn parse_number(input: &str) -> IResult<&str, usize> {
     Ok((input, number.parse().unwrap()))
 }
 
+/// Parses a Rust flavored variable wrapped in double quotes
 pub fn parse_string_escaped_rust_flavored_variable(input: &str) -> IResult<&str, String> {
     let (input, alpha) = delimited(tag("\""), parse_rust_flavored_variable, tag("\""))(input)?;
     Ok((input, alpha.to_string()))
 }
 
+/// Parses a Rust flavored variable
 pub fn parse_rust_flavored_variable(input: &str) -> IResult<&str, &str> {
     recognize(pair(
         alt((alpha1, tag("_"))),
@@ -128,6 +132,7 @@ pub fn parse_limit_clause(input: &str) -> IResult<&str, Value> {
     Ok((input, limit))
 }
 
+/// Indicates that the input is at the end of the file
 pub(crate) fn eof<I: Copy + InputLength, E: ParseError<I>>(input: I) -> IResult<I, I, E> {
     if input.input_len() == 0 {
         Ok((input, input))
