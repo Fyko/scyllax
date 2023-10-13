@@ -33,7 +33,8 @@ pack() {
 
     # manpage, readme and license
     cp README.md "$tempdir/$package_name"
-    cp LICENSE "$tempdir/$package_name"
+    cp LICENSE-MIT "$tempdir/$package_name"
+    cp LICENSE-APACHE "$tempdir/$package_name"
 
     # archiving
     pushd "$tempdir"
