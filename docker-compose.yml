@@ -16,10 +16,10 @@ services:
       - "9160:9160"
       - "9180:9180"
     healthcheck:
-      test: ["CMD-SHELL", "[ $$(nodetool statusgossip) = running ]"]
-      interval: 10s
+      test: [ "CMD", "cqlsh", "-e", "select * from system.local" ]
+      interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 60
 
 volumes:
   scylla_storage:

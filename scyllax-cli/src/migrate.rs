@@ -282,7 +282,7 @@ pub async fn revert(migration_source: &str, connect_opts: ConnectOpts) -> anyhow
 
 /// Creates the `scyllax_migrations` table.
 pub async fn init(connect_opts: ConnectOpts) -> anyhow::Result<()> {
-    let create_keyspace = r#"create keyspace if not exists scyllax_migrations with replication = { 'class': 'LocalStrategy' };"#;
+    let create_keyspace = r#"create keyspace if not exists scyllax_migrations with replication = { 'class': 'NetworkTopologyStrategy', 'datacenter1': 1 };"#;
     let create_table = r#"
 create table if not exists scyllax_migrations.migration (
     bucket int,
@@ -307,9 +307,10 @@ create table if not exists scyllax_migrations.migration (
     }
 
     println!(
-        "{}\n{}",
+        "{}\n{}\n{}",
         style("scyllax_migrations keyspace and table created.").green(),
-        style("It's recommended you manually create these tables in production.")
+        style("It's recommended you manually create these tables in production."),
+        style("See init.cql in folder for scyllax-cli in our GitHub repository.")
     );
 
     Ok(())

@@ -1,5 +1,5 @@
 -- create keyspace if not exists scyllax_migrations WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 3 } AND durable_writes = true;
-create keyspace if not exists scyllax_migrations with replication = { 'class': 'LocalStrategy' };
+create keyspace if not exists scyllax_migrations with replication = { 'class': 'NetworkTopologyStrategy', 'datacenter1': 1 };
 create table if not exists scyllax_migrations.migration (
     bucket int,
 	version bigint,
