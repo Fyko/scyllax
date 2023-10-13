@@ -1,6 +1,12 @@
 # Changelog
 
-## [0.1.9-alpha] 2021-10-05
+## [0.1.10-alpha] 2023-10-13
+
+### Chore
+
+- setup binstall
+
+## [0.1.9-alpha] 2023-10-05
 
 ### Features
 
