@@ -1,7 +1,7 @@
 [package]
 name = "scyllax-cli"
 description = "The CLI for scyllax -- mainly managing migrations"
-version.workspace = true
+version = "0.1.9-alpha.3"
 license.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -10,7 +10,7 @@ homepage.workspace = true
 readme = "../README.md"
 
 [[bin]]
-name = "scyllax"
+name = "scyllax-cli"
 path = "src/bin/scyllax.rs"
 
 [dependencies]

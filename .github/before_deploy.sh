@@ -41,7 +41,7 @@ pack() {
     if [ "$OS_NAME" = windows-latest ]; then
         7z a "$out_dir/$package_name.zip" "$package_name"/*
     else
-        tar czf "$out_dir/$package_name.tar.gz" "$package_name"/*
+        tar czf "$out_dir/$package_name.tgz" "$package_name"/*
     fi
     popd
     rm -r "$tempdir"
