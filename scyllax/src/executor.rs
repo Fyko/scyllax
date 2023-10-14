@@ -38,7 +38,7 @@ pub trait GetPreparedStatement<T: Query> {
     fn get(&self) -> &PreparedStatement;
 }
 
-pub trait GetCoalescingSender<T: Query + ReadQuery> {
+pub trait GetCoalescingSender<T: ReadQuery> {
     fn get(&self) -> &Sender<ShardMessage<T>>;
 }
 
@@ -88,9 +88,14 @@ impl<T: QueryCollection + Clone> Executor<T> {
     /// Executes a read query and returns the result.
     pub async fn execute_read<Q>(&self, query: Q) -> Result<Q::Output, ScyllaxError>
     where
-        Q: Query + ReadQuery,
+        Q: ReadQuery,
         T: GetPreparedStatement<Q> + GetCoalescingSender<Q>,
     {
+        let to_coalesce = Q::coalesce();
+        if !to_coalesce {
+            return self.perform_read_query(query).await;
+        }
+
         let (response_tx, response_rx) = oneshot::channel();
         let task = self.queries.get_task::<Q>();
 
@@ -115,13 +120,14 @@ impl<T: QueryCollection + Clone> Executor<T> {
         s.finish()
     }
 
+    /// ## internal
     /// the read task is responsible for coalescing requests
     pub async fn read_task<Q>(
         &self,
         mut request_receiver: Receiver<ShardMessage<Q>>,
         query_runner: Sender<QueryRunnerMessage<Q>>,
     ) where
-        Q: Query + ReadQuery + Hash + Send + Sync + 'static,
+        Q: ReadQuery,
         T: GetPreparedStatement<Q> + GetCoalescingSender<Q>,
     {
         let mut join_set: JoinSet<_> = JoinSet::new();
@@ -131,6 +137,7 @@ impl<T: QueryCollection + Clone> Executor<T> {
         loop {
             tokio::select! {
                 Some((query, tx)) = request_receiver.recv() => {
+                    tracing::debug!("recieved a query: {:#?}", query);
                     let query_type = std::any::type_name::<Q>();
                     let hash = Self::calculate_hash(&query);
 
@@ -189,6 +196,8 @@ impl<T: QueryCollection + Clone> Executor<T> {
         }
     }
 
+    /// ## internal
+    ///
     /// This function is repsonsible for receiving query requests, executing them, and sending the result back to the requestor.
     ///
     /// It is spawned by the branch of [`Executor::read_task`] that is responsible for coalescing requests.
@@ -204,32 +213,44 @@ impl<T: QueryCollection + Clone> Executor<T> {
         }) = query_receiver.recv().await
         {
             tracing::debug!("running query for hash: {hash}");
-            let statement = self.queries.get_prepared::<Q>();
-            let variables = query.bind().unwrap();
-            let response = match self.session.execute(statement, variables).await {
-                Ok(response) => {
-                    tracing::debug!(
-                        "query executed successfully: {:?} rows",
-                        response.rows_num()
-                    );
-                    response
-                }
-                Err(e) => {
-                    tracing::error!("error executing query: {:#?}", e);
-                    let _ = response_transmitter.send(Err(e.into()));
-                    return;
-                }
-            };
-            let parsed = Q::parse_response(response).await;
+            let result = self.perform_read_query(query).await;
 
-            let _ = response_transmitter.send(parsed.clone());
+            // todo(fyko): arc this
+            let _ = response_transmitter.send(result.clone());
         }
+    }
+
+    /// ## internal
+    ///
+    /// Executes a read query and returns the result.
+    pub(self) async fn perform_read_query<Q>(&self, query: Q) -> Result<Q::Output, ScyllaxError>
+    where
+        Q: Query + ReadQuery + Hash + Send + Sync,
+        T: GetPreparedStatement<Q> + GetCoalescingSender<Q>,
+    {
+        let statement = self.queries.get_prepared::<Q>();
+        let variables = query.bind().unwrap();
+        let response = match self.session.execute(statement, variables).await {
+            Ok(response) => {
+                tracing::debug!(
+                    "query executed successfully: {:?} rows",
+                    response.rows_num()
+                );
+                response
+            }
+            Err(e) => {
+                tracing::error!("error executing query: {:#?}", e);
+                return Err(e.into());
+            }
+        };
+
+        Q::parse_response(response).await
     }
 
     /// Executes a write query and returns the [`scylla::QueryResult`].
     pub async fn execute_write<Q>(&self, query: Q) -> Result<QueryResult, ScyllaxError>
     where
-        Q: Query + WriteQuery,
+        Q: WriteQuery,
         T: GetPreparedStatement<Q>,
     {
         let statement = self.queries.get_prepared::<Q>();
