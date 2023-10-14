@@ -31,7 +31,7 @@ tracing-subscriber.workspace = true
 glob = "0.3.1"
 tracing.workspace = true
 filetime = "0.2.22"
-time = { version = "0.3.29", features = ["formatting"] }
+time = { version = "0.3.30", features = ["formatting"] }
 sha2 = "0.10.8"
 uuid.workspace = true
 
