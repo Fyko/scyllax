@@ -43,6 +43,30 @@ pub struct PersonEntity {
 }
 ```
 
+### 4. Query Collections
+Scylla required queries be prepared before they can be executed. To prepare (and check) all queries at startup, create a query collection and pass it into an Executor.
+```rust,ignore
+create_query_collection!(
+    PersonQueries,
+    {
+        GetPersonById,
+        GetPersonByEmail
+    },
+    {
+        DeletePersonById,
+        UpsertPerson
+    }
+);
+
+let executor = Executor::<PersonQueries>::new(Arc::new(session));
+
+let user = executor.execute_read(GetPersonByEmail {
+    email: "user@truffle.vip".to_string(),
+}).await?;
+
+println!("{user:#?}");
+```
+
 ## Features
 - [x] Read Queries
 - [x] Write Queries (https://github.com/trufflehq/scyllax/pull/1)
