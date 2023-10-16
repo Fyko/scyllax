@@ -48,14 +48,14 @@ Scylla required queries be prepared before they can be executed. To prepare (and
 ```rust,ignore
 create_query_collection!(
     PersonQueries,
-    {
+    [
         GetPersonById,
         GetPersonByEmail
-    },
-    {
+    ],
+    [
         DeletePersonById,
         UpsertPerson
-    }
+    ]
 );
 
 let executor = Executor::<PersonQueries>::new(Arc::new(session));
