@@ -58,7 +58,7 @@ create_query_collection!(
     ]
 );
 
-let executor = Executor::<PersonQueries>::new(Arc::new(session));
+let executor = Executor::<PersonQueries>::new(Arc::new(session)).await;
 
 let user = executor.execute_read(GetPersonByEmail {
     email: "user@truffle.vip".to_string(),
