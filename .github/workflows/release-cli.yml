@@ -68,7 +68,7 @@ jobs:
         id: bundle_name
         run: |
           bundle_name="${GITHUB_REF/refs\/tags\//}-$TARGET"
-          echo "value=$bundle_name" >> $GITHUB_ENV
+          echo "value=$bundle_name" >> $GITHUB_OUTPUT
 
       - name: Prepare binaries
         shell: bash
