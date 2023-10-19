@@ -64,31 +64,23 @@ jobs:
             cargo build --release --target ${{ matrix.job.target }}
           fi
 
-      - name: Install required dependencies
+      - name: Create bundle name
+        id: bundle_name
+        run: |
+          bundle_name="${GITHUB_REF/refs\/tags\//}-$TARGET"
+          echo "value=$bundle_name" >> $GITHUB_ENV
+
+      - name: Prepare binaries
         shell: bash
         run: |
-          if [[ ${{ matrix.job.target }} == arm-unknown-linux-gnueabihf ]]; then
-              sudo apt update
-              sudo apt-get install -y binutils-arm-linux-gnueabihf
-          fi
-          if [[ ${{ matrix.job.target }} == aarch64-unknown-linux-gnu ]]; then
-              sudo apt update
-              sudo apt-get install -y binutils-aarch64-linux-gnu
-          fi
-
-      - name: Packaging final binary
-        shell: bash
-        env:
-          TARGET: ${{ matrix.job.target }}
-          PROJECT_NAME: scyllax-cli
-          PACKAGE_NAME: scyllax-cli
-          OS_NAME: ${{ matrix.job.os }}
-        run: ./.github/before_deploy.sh
+          cd target/${{ matrix.job.target }}/release
+          strip scyllax-cli || true
+          tar czvf ../../../${{ steps.bundle_name.outputs.value }}.tar.gz scyllax-cli
 
       - name: Releasing assets
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            scyllax-cli*-${{ matrix.job.target }}.*
+            ${{ steps.bundle_name.outputs.value }}.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
