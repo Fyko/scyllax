@@ -1,7 +1,7 @@
 [package]
 name = "scyllax-cli"
 description = "The CLI for scyllax -- mainly managing migrations"
-version = "0.1.11-alpha"
+version = "0.1.11-alpha.1"
 license.workspace = true
 edition.workspace = true
 authors.workspace = true

@@ -1433,7 +1433,7 @@ dependencies = [
 
 [[package]]
 name = "scyllax-cli"
-version = "0.1.11-alpha"
+version = "0.1.11-alpha.1"
 dependencies = [
  "anyhow",
  "async-trait",
