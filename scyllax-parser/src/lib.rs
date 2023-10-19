@@ -11,7 +11,7 @@ pub use delete::DeleteQuery;
 pub use r#where::{ComparisonOperator, WhereClause};
 pub use select::SelectQuery;
 
-use nom::{error::Error, Err, IResult};
+use nom::{branch::alt, combinator::map, error::Error, Err, IResult};
 
 /// Represents a query
 /// ```rust
@@ -46,11 +46,13 @@ pub enum Query {
 }
 
 /// Parse a CQL query.
-fn parse_query(input: &str) -> IResult<&str, Query> {
-    nom::branch::alt((
-        nom::combinator::map(select::parse_select, Query::Select),
-        nom::combinator::map(delete::parse_delete, Query::Delete),
-    ))(input)
+pub fn parse_query(input: &str) -> IResult<&str, Query> {
+    let trimmed = input.trim();
+
+    alt((
+        map(select::parse_select, Query::Select),
+        map(delete::parse_delete, Query::Delete),
+    ))(trimmed)
 }
 
 impl<'a> TryFrom<&'a str> for Query {
