@@ -75,12 +75,12 @@ jobs:
         run: |
           cd target/${{ matrix.job.target }}/release
           strip scyllax-cli || true
-          tar czvf ../../../${{ steps.bundle_name.outputs.value }}.tar.gz scyllax-cli
+          tar czvf ../../../${{ steps.bundle_name.outputs.value }}.tgz scyllax-cli
 
       - name: Releasing assets
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ${{ steps.bundle_name.outputs.value }}.tar.gz
+            ${{ steps.bundle_name.outputs.value }}.tgz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
