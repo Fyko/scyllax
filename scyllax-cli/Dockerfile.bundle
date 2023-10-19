@@ -1,0 +1,7 @@
+FROM alpine
+ARG BUNDLE_URL
+
+RUN apk add --no-cache curl
+RUN curl -L $BUNDLE_URL | tar -vxz
+
+ENTRYPOINT ["/scyllax-cli"]

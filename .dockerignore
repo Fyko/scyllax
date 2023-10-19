@@ -1,0 +1,15 @@
+.github
+book
+notes
+target
+test
+.dockerignore
+.gitignore
+.pre-commit-config.yaml
+cliff.toml
+docker-compose.yml
+gen-changelogs.sh
+init.cql
+Makefile.toml
+release.sh
+release.toml
