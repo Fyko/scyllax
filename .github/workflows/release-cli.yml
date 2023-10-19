@@ -9,7 +9,7 @@ on:
 
 jobs:
   publish_cli:
-    name: Publishing CLI for ${{ matrix.job.os }}
+    name: Publishing CLI for ${{ matrix.job.target }}
     runs-on: ${{ matrix.job.os }}
     strategy:
       matrix:
