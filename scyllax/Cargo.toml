@@ -10,7 +10,6 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-anyhow.workspace = true
 async-trait = "0.1"
 getrandom = "0.2"
 mac_address = "1"

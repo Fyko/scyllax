@@ -21,7 +21,7 @@ use tokio::{
 pub async fn create_session(
     known_nodes: impl IntoIterator<Item = impl AsRef<str>>,
     default_keyspace: Option<impl Into<String>>,
-) -> anyhow::Result<Session> {
+) -> Result<Session, ScyllaxError> {
     let session = SessionBuilder::new()
         .known_nodes(known_nodes)
         .build()

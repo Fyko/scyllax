@@ -1417,7 +1417,6 @@ dependencies = [
 name = "scyllax"
 version = "0.1.11-alpha"
 dependencies = [
- "anyhow",
  "async-trait",
  "getrandom",
  "mac_address",
@@ -1465,7 +1464,6 @@ dependencies = [
 name = "scyllax-macros-core"
 version = "0.1.11-alpha"
 dependencies = [
- "anyhow",
  "convert_case",
  "darling",
  "proc-macro2",

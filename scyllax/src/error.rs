@@ -7,7 +7,11 @@ use tokio::sync::oneshot::error::RecvError;
 pub enum ScyllaxError {
     /// A query error from Scylla
     #[error("Scylla Query error: {0}")]
-    Scylla(#[from] scylla::transport::errors::QueryError),
+    QueryError(#[from] scylla::transport::errors::QueryError),
+
+    /// A session error from Scylla
+    #[error("Scylla error: {0}")]
+    NewSessionError(#[from] scylla::transport::errors::NewSessionError),
 
     /// An error thrown when trying to parse a single row
     #[error("Scylla single row typed error: {0}")]

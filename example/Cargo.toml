@@ -10,7 +10,7 @@ homepage.workspace = true
 publish = false
 
 [dependencies]
-anyhow.workspace = true
+anyhow = "1"
 serde.workspace = true
 serde_json.workspace = true
 scylla.workspace = true
