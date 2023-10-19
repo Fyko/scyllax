@@ -66,6 +66,7 @@ jobs:
 
       - name: Create bundle name
         id: bundle_name
+        shell: bash
         run: |
           bundle_name="${GITHUB_REF/refs\/tags\//}-${{ matrix.job.target }}"
           echo "value=$bundle_name" >> $GITHUB_OUTPUT
