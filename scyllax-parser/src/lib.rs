@@ -1,17 +1,21 @@
 //! A parser for CQL queries
 //! See the source code and tests for examples of usage (for now).
+pub mod comment;
 pub mod common;
+pub mod create_keyspace;
 pub mod delete;
 pub mod reserved;
 pub mod select;
 pub mod r#where;
 
+use comment::parse_comment;
 pub use common::{Column, Value, Variable};
+use create_keyspace::CreateKeyspaceQuery;
 pub use delete::DeleteQuery;
 pub use r#where::{ComparisonOperator, WhereClause};
 pub use select::SelectQuery;
 
-use nom::{branch::alt, combinator::map, error::Error, Err, IResult};
+use nom::{branch::alt, combinator::map, error::Error, multi::many0, Err, IResult};
 
 /// Represents a query
 /// ```rust
@@ -43,16 +47,27 @@ pub enum Query {
     Select(SelectQuery),
     /// A delete query
     Delete(DeleteQuery),
+    /// A create keyspace query
+    CreateKeyspace(CreateKeyspaceQuery),
 }
 
 /// Parse a CQL query.
 pub fn parse_query(input: &str) -> IResult<&str, Query> {
-    let trimmed = input.trim();
+    // trim whitespace
+    let input = input.trim();
+    // strip comments
+    let (input, _) = many0(parse_comment)(input)?;
+    let input = input.trim();
+    println!("input: {input:#?}");
 
     alt((
         map(select::parse_select, Query::Select),
         map(delete::parse_delete, Query::Delete),
-    ))(trimmed)
+        map(
+            create_keyspace::parse_create_keyspace,
+            Query::CreateKeyspace,
+        ),
+    ))(input)
 }
 
 impl<'a> TryFrom<&'a str> for Query {
@@ -63,6 +78,19 @@ impl<'a> TryFrom<&'a str> for Query {
     }
 }
 
+/// Parse a file that can contain multiple CQL queries. The queries are separated by a semicolon.
+/// There may be an indeterminate number of newlines between the semicolon and the next query.
+pub fn parse_query_file(input: &str) -> IResult<&str, Vec<Query>> {
+    let trimmed = input.trim();
+
+    let (input, queries) = nom::multi::separated_list1(
+        nom::character::complete::multispace0,
+        nom::sequence::terminated(parse_query, nom::character::complete::multispace0),
+    )(trimmed)?;
+
+    Ok((input, queries))
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -70,9 +98,15 @@ mod test {
 
     #[test]
     fn test_query_select() {
-        let query = Query::try_from(
-            "select id, name, age from person where id = :id and name = :name and age > ? limit 10",
-        );
+        let query = "/* this is a comment */ select id, name, age
+        from person
+        where id = :id
+        and name = :name
+        and age > ?
+        limit 10";
+        println!("query: {:#?}", query);
+
+        let query = Query::try_from(query);
 
         assert_eq!(
             query,

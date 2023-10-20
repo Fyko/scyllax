@@ -75,7 +75,7 @@ args = ["fmt", "--all", "--", "--check"]
 
 
 [tasks.test]
-env = { "RUN_MODE" = "test", "RUST_LOG" = "info" }
+env = { "RUN_MODE" = "test", "RUST_LOG" = "info", "RUST_BACKTRACE" = "short" }
 command = "cargo"
 args = ["nextest", "run", "--workspace", "${@}"]
 

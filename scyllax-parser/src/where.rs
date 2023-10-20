@@ -8,8 +8,8 @@
 use nom::{
     branch::alt,
     bytes::complete::{tag, tag_no_case},
-    character::complete::multispace1,
-    combinator::map,
+    character::complete::multispace0,
+    combinator::{map, opt},
     multi::separated_list0,
     IResult,
 };
@@ -18,6 +18,17 @@ use crate::common::{
     parse_rust_flavored_variable, parse_string_escaped_rust_flavored_variable, parse_value, Column,
     Value,
 };
+
+/// Parses a condition.
+/// - eg: `id = ?`
+/// - eg: durable_writes = true
+pub fn parse_comparisons(input: &str) -> IResult<&str, Vec<WhereClause>> {
+    // remove leading and if exists
+    let (input, _) = opt(tag_no_case("and"))(input)?;
+    let (input, _) = multispace0(input)?;
+
+    separated_list0(tag_no_case("and"), parse_where_condition)(input)
+}
 
 /// Parses a where clause with the following format:
 ///
@@ -30,7 +41,7 @@ use crate::common::{
 pub fn parse_where_clause(input: &str) -> IResult<&str, Vec<WhereClause>> {
     let (input, _) = tag_no_case("where ")(input)?;
 
-    separated_list0(tag_no_case(" and "), parse_where_condition)(input)
+    separated_list0(tag_no_case("and"), parse_where_condition)(input)
 }
 
 /// Represents a single `where` clause on a CQL statement
@@ -79,12 +90,20 @@ fn parse_where_column(input: &str) -> IResult<&str, String> {
 }
 
 /// Parses a single where condition
-fn parse_where_condition(input: &str) -> IResult<&str, WhereClause> {
+pub fn parse_where_condition(input: &str) -> IResult<&str, WhereClause> {
+    // eat leading whitespace
+    let (input, _) = multispace0(input)?;
+
     let (input, column) = parse_where_column(input)?;
-    let (input, _) = multispace1(input)?;
+    let (input, _) = multispace0(input)?;
     let (input, operator) = parse_comparison_operator(input)?;
-    let (input, _) = multispace1(input)?;
+    let (input, _) = multispace0(input)?;
     let (input, value) = parse_value(input)?;
+
+    // eat trailing whitespace
+    let (input, _) = multispace0(input)?;
+    // eat trailing semicolon
+    let (input, _) = opt(tag(";"))(input)?;
 
     Ok((
         input,
