@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use scylla::frame::value::Timestamp;
 use scyllax::prelude::*;
 
@@ -6,6 +8,17 @@ create_query_collection!(
     [GetLatestVersion],
     [DeleteByVersion, UpsertMigration]
 );
+
+pub async fn create_migration_executor(
+    scylla_nodes: String,
+    keyspace: String,
+) -> anyhow::Result<Arc<Executor<MigrationQueries>>> {
+    let session = create_session(scylla_nodes.split(','), Some(keyspace)).await?;
+
+    let executor = Executor::<MigrationQueries>::new(Arc::new(session)).await?;
+
+    Ok(Arc::new(executor))
+}
 
 #[entity]
 #[upsert_query(table = "migration", name = UpsertMigration)]
