@@ -72,14 +72,17 @@ pub enum Value {
     Literal(String),
     /// The value is a number
     Number(usize),
+    /// The value is a boolean
+    Boolean(bool),
 }
 
 /// Parses a [`Value`]
 pub fn parse_value(input: &str) -> IResult<&str, Value> {
     alt((
+        map(parse_boolean, Value::Boolean),
         map(parse_variable, Value::Variable),
         map(parse_number, Value::Number),
-        map(parse_string, Value::Literal),
+        map(parse_string, Value::Literal), // must be last!
     ))(input)
 }
 
@@ -87,7 +90,6 @@ pub fn parse_value(input: &str) -> IResult<&str, Value> {
 /// If there are any escaped quotes, they should be included in the output.
 /// e.g. `\"` should be parsed as `\"`
 /// - `foo` -> `foo`
-/// TODO: - `"foo"` -> `"foo"`
 fn parse_string(input: &str) -> IResult<&str, String> {
     let (input, alpha) = alt((
         // barf
@@ -108,6 +110,16 @@ pub fn parse_escaped(input: &str) -> IResult<&str, String> {
 fn parse_number(input: &str) -> IResult<&str, usize> {
     let (input, number) = digit1(input)?;
     Ok((input, number.parse().unwrap()))
+}
+
+/// Parses a [`Value::Boolean`]
+fn parse_boolean(input: &str) -> IResult<&str, bool> {
+    let (input, boolean) = alt((
+        map(tag_no_case("true"), |_| true),
+        map(tag_no_case("false"), |_| false),
+    ))(input)?;
+
+    Ok((input, boolean))
 }
 
 /// Parses a Rust flavored variable wrapped in double quotes
