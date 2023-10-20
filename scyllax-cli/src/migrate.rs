@@ -132,11 +132,7 @@ create table if not exists scyllax_migrations.migration (
 	primary key (bucket, version)
 );"#;
 
-    let session = create_session(
-        connect_opts.scylla_nodes.split(','),
-        Some(connect_opts.keyspace),
-    )
-    .await?;
+    let session = create_session(connect_opts.scylla_nodes.split(','), None::<&str>).await?;
 
     for query in [create_keyspace, create_table] {
         let prepared_query = Query::new(query);
