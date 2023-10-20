@@ -1480,7 +1480,6 @@ dependencies = [
  "criterion",
  "nom",
  "pretty_assertions",
- "serde_json",
 ]
 
 [[package]]
