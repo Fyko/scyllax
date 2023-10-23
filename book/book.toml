@@ -8,6 +8,13 @@ language = "en"
 site-url = "/scyllax/"
 git-repository-url = "https://github.com/trufflehq/scyllax/tree/main/book"
 edit-url-template  = "https://github.com/trufflehq/scyllax/edit/main/book/{path}"
+additional-css = ["./mdbook-admonish.css"]
 
 [output.html.playground]
 runnable = false
+
+[preprocessor]
+
+[preprocessor.admonish]
+command = "mdbook-admonish"
+assets_version = "3.0.0" # do not edit: managed by `mdbook-admonish install`

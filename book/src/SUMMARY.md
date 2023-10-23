@@ -10,4 +10,5 @@
 - [Delete Queries](./delete_queries/README.md)
 - [Upsert Queries](./upsert_queries/README.md)
 - [Query Collections](./query_collections/README.md)
+- [CLI](./cli/README.md)
 - [Example](./example/README.md)

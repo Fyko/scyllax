@@ -11,21 +11,27 @@ script = '''
     pre-commit --version || pip install pre-commit
     pre-commit install || echo "failed to install git hooks!" 1>&2
 
+    echo # install cargo-binstall
+    cargo install -q cargo-binstall
+
     echo # things required for `cargo make test`
-    cargo install cargo-nextest
+    cargo binstall -q -y cargo-nextest
 
     echo # things required by `cargo make coverage`
     rustup component add llvm-tools-preview
-    cargo install cargo-llvm-cov
+    cargo install -q cargo-llvm-cov
 
     echo # things required by `cargo make audit`
-    cargo install cargo-audit
+    cargo binstall -q -y cargo-audit
 
     echo # things required by `cargo release`
-    cargo install cargo-release
+    cargo binstall -q -y cargo-release
 
     echo # things required by `cargo make sort-deps`
-    cargo install cargo-sort
+    cargo binstall -q -y cargo-sort
+
+    echo # things required by mdbook
+    cargo binstall -q -y mdbook mdbook-admonish
 '''
 
 [tasks.example]
