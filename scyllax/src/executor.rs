@@ -188,11 +188,17 @@ impl<T: QueryCollection + Clone> Executor<T> {
                 Some(join_handle) = join_set.join_next() => {
                     tracing::debug!("join set recieved a result!");
                     if let Ok((hash, result)) = join_handle {
-                        if let Some(senders) = requests.remove(&hash) {
+                        if let Some(mut senders) = requests.remove(&hash) {
                             let res = result.unwrap();
+
+                            let last_sender = senders.pop();
 
                             for sender in senders {
                                 let _ = sender.send(res.clone());
+                            }
+
+                            if let Some(sender) = last_sender {
+                                let _ = sender.send(res);
                             }
                         }
                     }
