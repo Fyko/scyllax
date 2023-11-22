@@ -48,5 +48,15 @@ pub async fn prepare_query(
     query_type: &str,
 ) -> Result<PreparedStatement, ScyllaxError> {
     tracing::info!("preparing query");
-    Ok(session.prepare(query).await?)
+
+    let res = session.prepare(query).await;
+
+    match res {
+        Ok(prepared) => Ok(prepared),
+        Err(err) => {
+            tracing::error!("failed to prepare query: {:#?}", err);
+
+            return Err(err.into());
+        }
+    }
 }

@@ -60,7 +60,7 @@ pub type ShardMessage<Q> = (Q, oneshot::Sender<ReadQueryResult<Q>>);
 type TaskRequestMap<Q> = HashMap<u64, Vec<oneshot::Sender<ReadQueryResult<Q>>>>;
 
 /// The result of a read query.
-type ReadQueryResult<Q> = Result<<Q as ReadQuery>::Output, ScyllaxError>;
+type ReadQueryResult<Q> = Arc<Result<<Q as ReadQuery>::Output, ScyllaxError>>;
 
 /// A message sent to the [`Executor::read_query_runner`] task.
 pub struct QueryRunnerMessage<Q: ReadQuery> {
@@ -71,6 +71,8 @@ pub struct QueryRunnerMessage<Q: ReadQuery> {
 
 impl<T: QueryCollection + Clone> Executor<T> {
     /// Creates a new [`Executor`] from a [`Session`] and a [`QueryCollection`].
+    // all this is super ugly and inefficient, but its okay because
+    // it only happens once per executor
     pub async fn new(session: Arc<Session>) -> Result<Self, ScyllaxError> {
         let queries = T::new(&session).await?;
         let executor = Arc::new(Self {
@@ -79,7 +81,6 @@ impl<T: QueryCollection + Clone> Executor<T> {
         });
 
         let queries = executor.queries.clone().register_tasks(executor);
-        // let queries = Arc::new(queries);
         let executor = Self { session, queries };
 
         Ok(executor)
@@ -96,10 +97,10 @@ impl<T: QueryCollection + Clone> Executor<T> {
             return self.perform_read_query(query).await;
         }
 
-        let (response_tx, response_rx) = oneshot::channel();
+        let (tx, rx) = oneshot::channel();
         let task = self.queries.get_task::<Q>();
 
-        match task.send((query, response_tx)).await {
+        match task.send((query, tx)).await {
             Ok(_) => (),
             Err(e) => {
                 tracing::error!("error sending query to task: {:#?}", e);
@@ -107,9 +108,14 @@ impl<T: QueryCollection + Clone> Executor<T> {
             }
         }
 
-        match response_rx.await {
+        let result = match rx.await {
             Ok(result) => result,
-            Err(e) => Err(ScyllaxError::ReceiverError(e)),
+            Err(e) => return Err(ScyllaxError::ReceiverError(e)),
+        };
+
+        match Arc::try_unwrap(result) {
+            Ok(data) => data,
+            Err(arc) => (*arc).clone(),
         }
     }
 
@@ -171,22 +177,22 @@ impl<T: QueryCollection + Clone> Executor<T> {
                         });
 
                         join_set.spawn(async move {
-                            let res = match response_receiver.await {
-                                Ok(result) => result,
-                                Err(e) => Err(ScyllaxError::ReceiverError(e)),
-                            };
+                            let res = response_receiver.await;
                             tracing::debug!(hash = hash, "joinset handle returned: {:#?}", res);
 
                             (hash, res)
                         });
                     }
                 },
+                // this runs when the query is completed and needs be to dispatched to the requestors
                 Some(join_handle) = join_set.join_next() => {
                     tracing::debug!("join set recieved a result!");
                     if let Ok((hash, result)) = join_handle {
                         if let Some(senders) = requests.remove(&hash) {
+                            let res = result.unwrap();
+
                             for sender in senders {
-                                let _ = sender.send(result.clone());
+                                let _ = sender.send(res.clone());
                             }
                         }
                     }
@@ -214,9 +220,7 @@ impl<T: QueryCollection + Clone> Executor<T> {
         {
             tracing::debug!("running query for hash: {hash}");
             let result = self.perform_read_query(query).await;
-
-            // todo(fyko): arc this
-            let _ = response_transmitter.send(result.clone());
+            let _ = response_transmitter.send(Arc::new(result));
         }
     }
 
