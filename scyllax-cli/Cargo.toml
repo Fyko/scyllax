@@ -19,7 +19,7 @@ clap = { version = "4", features = ["derive", "env"] }
 clap_complete = { version = "4" }
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 anyhow = "1.0.75"
-url = { version = "2.4.1", default-features = false }
+url = { version = "2.5.0", default-features = false }
 async-trait = "0.1"
 console = "0.15.7"
 scylla.workspace = true
