@@ -8,7 +8,7 @@ Additionally, while in alpha, there is no `tracing` flag, so you must also insta
 
 ```toml
 scylla = "0.9"
-scyllax = "0.1.8-alpha"
+scyllax = "0.1.0"
 tracing = "0.1"
 ```
 

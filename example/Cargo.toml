@@ -1,7 +1,7 @@
 [package]
 name = "example"
 description = "an example using scyllax"
-version = "0.1.9-alpha.4"
+version = "0.1.0"
 license.workspace = true
 edition.workspace = true
 authors.workspace = true
