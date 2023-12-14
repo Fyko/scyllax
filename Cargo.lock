@@ -1447,15 +1447,18 @@ dependencies = [
 
 [[package]]
 name = "scyllax"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "getrandom",
  "mac_address",
  "once_cell",
+ "prost-types",
  "scylla",
  "scyllax-macros",
  "scyllax-macros-core",
+ "serde",
+ "serde_json",
  "thiserror",
  "tokio",
  "tracing",
@@ -1464,7 +1467,7 @@ dependencies = [
 
 [[package]]
 name = "scyllax-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1487,14 +1490,14 @@ dependencies = [
 
 [[package]]
 name = "scyllax-macros"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "scyllax-macros-core",
 ]
 
 [[package]]
 name = "scyllax-macros-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "convert_case",
  "darling",
@@ -1507,7 +1510,7 @@ dependencies = [
 
 [[package]]
 name = "scyllax-parser"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "criterion",
  "nom",

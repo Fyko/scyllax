@@ -52,7 +52,9 @@ impl From<Json> for prost_types::Struct {
                 kind: Some(match json {
                     Value::Null => Kind::NullValue(0 /* wot? */),
                     Value::Bool(v) => Kind::BoolValue(v),
-                    Value::Number(n) => Kind::NumberValue(n.as_f64().expect("Non-f64-representable number")),
+                    Value::Number(n) => {
+                        Kind::NumberValue(n.as_f64().expect("Non-f64-representable number"))
+                    }
                     Value::String(s) => Kind::StringValue(s),
                     Value::Array(v) => Kind::ListValue(prost_types::ListValue {
                         values: v.into_iter().map(serde_json_to_prost).collect(),
@@ -84,11 +86,13 @@ impl From<prost_types::Struct> for Json {
             match value.kind.unwrap() {
                 Kind::NullValue(_) => Value::Null,
                 Kind::BoolValue(v) => Value::Bool(v),
-                Kind::NumberValue(n) => {
-                    Value::Number(serde_json::Number::from_f64(n).expect("Non-f64-representable number"))
-                }
+                Kind::NumberValue(n) => Value::Number(
+                    serde_json::Number::from_f64(n).expect("Non-f64-representable number"),
+                ),
                 Kind::StringValue(s) => Value::String(s),
-                Kind::ListValue(v) => Value::Array(v.values.into_iter().map(prost_to_serde_json).collect()),
+                Kind::ListValue(v) => {
+                    Value::Array(v.values.into_iter().map(prost_to_serde_json).collect())
+                }
                 Kind::StructValue(v) => Value::Object(from_struct(v)),
             }
         }
