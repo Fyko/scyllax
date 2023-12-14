@@ -21,3 +21,11 @@ thiserror = "1"
 tokio.workspace = true
 tracing.workspace = true
 uuid.workspace = true
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+prost-types = { version = "0.12", optional = true }
+
+[features]
+default = []
+json = ["serde_json", "serde"]
+grpc = ["prost-types"]
