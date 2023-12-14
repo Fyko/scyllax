@@ -14,7 +14,7 @@ concurrency:
 jobs:
   build:
     name: Build Website
-    runs-on: ubuntu-latest
+    runs-on: scyllax-runner
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -44,7 +44,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: scyllax-runner
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

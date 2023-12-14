@@ -10,7 +10,7 @@ on:
 
 jobs:
   audit:
-    runs-on: ubuntu-latest
+    runs-on: scyllax-runner
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

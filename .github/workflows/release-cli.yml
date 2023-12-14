@@ -23,19 +23,19 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             use-cross: false
-          - os: ubuntu-latest
+          - os: scyllax-runner
             target: x86_64-unknown-linux-gnu
             use-cross: false
-          - os: ubuntu-latest
+          - os: scyllax-runner
             target: x86_64-unknown-linux-musl
             use-cross: true
-          - os: ubuntu-latest
+          - os: scyllax-runner
             target: i686-unknown-linux-gnu
             use-cross: true
-          - os: ubuntu-latest
+          - os: scyllax-runner
             target: arm-unknown-linux-gnueabihf
             use-cross: true
-          - os: ubuntu-latest
+          - os: scyllax-runner
             target: aarch64-unknown-linux-gnu
             use-cross: true
     steps:
@@ -94,7 +94,7 @@ jobs:
 
   release_docker:
     name: Publishing Docker Image
-    runs-on: ubuntu-latest
+    runs-on: scyllax-runner
     needs: publish_cli
     permissions:
       packages: write

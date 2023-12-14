@@ -17,7 +17,7 @@ concurrency:
 jobs:
   check:
     name: Check Suite
-    runs-on: ubuntu-latest
+    runs-on: scyllax-runner
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -65,7 +65,7 @@ jobs:
 
   example:
     name: Run the example
-    runs-on: ubuntu-latest
+    runs-on: scyllax-runner
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
