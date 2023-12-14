@@ -84,8 +84,9 @@ jobs:
       - name: Setup 3-node Scylla cluster
         run: |
           sudo sh -c "echo 2097152 >> /proc/sys/fs/aio-max-nr"
-          docker compose -f ./test/docker-compose.yml up -d --wait
-      
+          docker pull scylladb/scylla # only pull once
+          docker compose -f ./test/docker-compose.yml up --wait
+
       - name: Install cqlsh
         run: pip install -U cqlsh
 
