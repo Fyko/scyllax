@@ -14,19 +14,23 @@ pub async fn run(opt: Opt) -> Result<()> {
     match opt.command {
         Command::Migrate(migrate) => match migrate.command {
             MigrateCommand::Add {
+                cluster,
                 source,
                 description,
-            } => migrate::add(&source, &description).await?,
+            } => migrate::add(&source, &description, cluster).await?,
             MigrateCommand::Init { connect_opts } => migrate::init(connect_opts).await?,
             MigrateCommand::Run {
                 source,
                 next,
+                all,
+                cluster,
                 connect_opts,
-            } => migrate::run(&source, connect_opts, next).await?,
+            } => migrate::run(&source, next, all, cluster, connect_opts).await?,
             MigrateCommand::Revert {
+                cluster,
                 source,
                 connect_opts,
-            } => migrate::revert(&source, connect_opts).await?,
+            } => migrate::revert(&source, cluster, connect_opts).await?,
             MigrateCommand::Info { .. } => {
                 println!("TODO: implement info command");
             }

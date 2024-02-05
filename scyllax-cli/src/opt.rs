@@ -38,6 +38,14 @@ pub enum MigrateCommand {
     Add {
         description: String,
 
+        /// If using nested migrations, create a migration for this specific cluster
+        #[clap(long)]
+        cluster: Option<String>,
+
+        /// Creates an up and down migration file for production (.prod.cql)
+        #[clap(long)]
+        prod: bool,
+
         #[clap(flatten)]
         source: Source,
     },
@@ -48,7 +56,7 @@ pub enum MigrateCommand {
         connect_opts: ConnectOpts,
     },
 
-    /// Run all pending migrations.
+    /// Run pending migrations.
     Run {
         #[clap(flatten)]
         source: Source,
@@ -56,6 +64,20 @@ pub enum MigrateCommand {
         /// Run only the next pending migration
         #[clap(long)]
         next: bool,
+
+        /// If using nested migrations, run them all on the current cluster
+        #[clap(long)]
+        all: bool,
+
+        /// Runs the .prod.cql file instead of the .cql file if it exists
+        /// 
+        /// If the .prod.cql file does not exist, the .cql file will be run 
+        #[clap(long)]
+        prod: bool,
+
+        /// If using nested migrations, only run migrations for this specific cluster
+        #[clap(long)]
+        cluster: Option<String>,
 
         #[clap(flatten)]
         connect_opts: ConnectOpts,
@@ -66,12 +88,20 @@ pub enum MigrateCommand {
         #[clap(flatten)]
         source: Source,
 
+        /// If using nested migrations, revert a migration for this specific cluster
+        #[clap(long)]
+        cluster: Option<String>,
+
         #[clap(flatten)]
         connect_opts: ConnectOpts,
     },
 
     /// List all available migrations.
     Info {
+        /// If using nested migrations, only list migrations for this specific cluster
+        #[clap(long)]
+        cluster: Option<String>,
+
         #[clap(flatten)]
         source: Source,
 
