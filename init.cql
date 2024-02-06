@@ -24,7 +24,6 @@ create materialized view person_by_email as
 insert into person(id, email, age, data, kind, "createdAt") values (e01e84d6-414c-11ee-be56-0242ac120002, 'foo1@scyllax.local', 25, '{"foo":"bar"}', 0, toUnixTimestamp(now()));
 insert into person(id, email, age, kind, "createdAt") values (e01e880a-414c-11ee-be56-0242ac120002, 'foo2@scyllax.local', 25, 1, toUnixTimestamp(now()));
 
-
 create table person_login (
 	id timeuuid,
 	person_id uuid,
@@ -33,3 +32,10 @@ create table person_login (
 );
 
 update person_login set count = count + 0 where id = 42dcfcde-5420-11ee-8c99-0242ac120002 and person_id = e01e84d6-414c-11ee-be56-0242ac120002;
+
+create table post (
+	id timeuuid primary key,
+	title text,
+	likes text,
+	created_at timestamp
+);
