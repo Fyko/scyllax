@@ -40,7 +40,7 @@ mod test {
             vec![
                 r#""id""#.to_string(),
                 r#""title""#.to_string(),
-                r#""data""#.to_string(),
+                r#""likes""#.to_string(),
                 r#""created_at""#.to_string()
             ]
         );
