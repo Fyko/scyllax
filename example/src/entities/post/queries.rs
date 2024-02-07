@@ -2,7 +2,7 @@ use super::model::UpsertPost;
 use scyllax::prelude::*;
 use uuid::Uuid;
 
-create_query_collection!(PosQueries, [GetPostById], [DeletePostById, UpsertPost]);
+create_query_collection!(PostQueries, [GetPostById], [DeletePostById, UpsertPost]);
 
 /// Get a [`super::model::PostEntity`] by its [`uuid::Uuid`]
 #[derive(Debug, Clone, PartialEq, ValueList, ReadQuery)]
