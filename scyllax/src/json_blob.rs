@@ -1,5 +1,8 @@
 use scylla::cql_to_rust::{FromCqlVal, FromCqlValError};
-use scylla::frame::response::result::CqlValue;
+use scylla::frame::response::result::{ColumnType, CqlValue};
+use scylla::serialize::value::SerializeCql;
+use scylla::serialize::writers::WrittenCellProof;
+use scylla::serialize::{CellWriter, SerializationError};
 use serde::{Deserialize, Serialize};
 
 /// An implementation of a JSON type for ScyllaDB.
@@ -18,6 +21,17 @@ impl scylla::frame::value::Value for JsonBlob {
     fn serialize(&self, buf: &mut Vec<u8>) -> Result<(), scylla::frame::value::ValueTooBig> {
         let data = serde_json::to_string(&self.0).unwrap();
         <String as scylla::frame::value::Value>::serialize(&data, buf)
+    }
+}
+
+impl SerializeCql for JsonBlob {
+    fn serialize<'b>(
+        &self,
+        typ: &ColumnType,
+        writer: CellWriter<'b>,
+    ) -> Result<WrittenCellProof<'b>, SerializationError> {
+        let data = serde_json::to_string(&self.0).unwrap();
+        <String as SerializeCql>::serialize(&data, typ, writer)
     }
 }
 
