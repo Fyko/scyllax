@@ -43,7 +43,7 @@ pub fn expand(input: TokenStream) -> TokenStream {
             }
         }
 
-        impl SerializeCql for #ident {
+        impl scylla::serialize::value::SerializeCql for #ident {
             fn serialize<'b>(
                 &self,
                 typ: &scylla::frame::response::result::ColumnType,
