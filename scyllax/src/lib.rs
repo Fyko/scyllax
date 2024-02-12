@@ -42,6 +42,8 @@ pub mod error;
 pub mod executor;
 #[cfg(feature = "json")]
 pub mod json;
+#[cfg(feature = "json")]
+pub mod json_blob;
 pub mod maybe_unset;
 // mod playground;
 pub mod prelude;

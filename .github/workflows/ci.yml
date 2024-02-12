@@ -107,7 +107,7 @@ jobs:
           RUST_LOG: debug
           SCYLLA_NODES: 172.42.0.2,172.42.0.3,172.42.0.4
           SCYLLA_DEFAULT_KEYSPACE: scyllax
-        run: cargo run -p example
+        run: cargo run --bin example
 
       - name: Run Benchmark
         env:
