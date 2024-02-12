@@ -32,3 +32,35 @@ impl<T: Debug + Clone + Serialize + DeserializeOwned> FromCqlVal<CqlValue> for J
             .ok_or(FromCqlValError::BadCqlType)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use serde::{Deserialize, Serialize};
+
+    use super::*;
+
+    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+    struct TestStruct {
+        a: i32,
+        b: String,
+    }
+
+    #[test]
+    fn test_json_cql() {
+        let value = Json(TestStruct {
+            a: 1,
+            b: "test".to_string(),
+        });
+
+        let mut buf: Vec<u8> = Vec::new();
+        ScyllaValue::serialize(&value, &mut buf).unwrap();
+
+        assert_eq!(
+            buf,
+            &[
+                0, 0, 0, 18, 123, 34, 97, 34, 58, 49, 44, 34, 98, 34, 58, 34, 116, 101, 115, 116,
+                34, 125
+            ]
+        );
+    }
+}
