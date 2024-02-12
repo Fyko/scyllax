@@ -14,7 +14,6 @@ use scylla::frame::value::CqlTimeuuid;
 use scyllax::prelude::*;
 use scyllax::{executor::create_session, util::v1_uuid};
 use tracing_subscriber::prelude::*;
-use uuid::Uuid;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

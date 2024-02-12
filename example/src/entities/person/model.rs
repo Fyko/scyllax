@@ -46,7 +46,6 @@ pub struct PersonEntity {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::entities::person::model::UpsertPerson;
     use pretty_assertions::assert_eq;
 
     #[test]

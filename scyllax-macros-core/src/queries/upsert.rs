@@ -115,7 +115,7 @@ pub(crate) fn upsert_impl(
 
     // SET clauses
     // expanded variables will loop over every field that isn't Pk
-    let (set_clauses, set_sv_push) = keys
+    let set_clauses = keys
         .iter()
         // filter out pks
         .filter(|f| !primary_keys.contains(f))
@@ -124,23 +124,16 @@ pub(crate) fn upsert_impl(
             let col = f.name.as_ref().unwrap();
             let ident_string = ident.to_string();
 
-            let query = if counters.contains(&f) {
+            if counters.contains(&f) {
                 format!("{col} = {col} + :{ident_string}")
             } else {
                 format!("{col} = :{ident_string}")
-            };
-
-            (
-                query,
-                quote! {
-                    values.add_named_value(#ident_string, &self.#ident)?;
-                },
-            )
+            }
         })
-        .unzip::<_, _, Vec<_>, Vec<_>>();
+        .collect::<Vec<_>>();
 
     // WHERE clauses
-    let (where_clauses, where_sv_push) = keys
+    let where_clauses = keys
         .iter()
         // filter out pks
         .filter(|f| primary_keys.contains(f))
@@ -149,25 +142,13 @@ pub(crate) fn upsert_impl(
             let col = f.name.as_ref().unwrap();
             let named_var = ident.to_string();
 
-            (
-                (col.clone(), named_var.clone()),
-                quote! {
-                    values.add_named_value(#named_var, &self.#ident)?;
-                },
-            )
+            (col.clone(), named_var.clone())
         })
-        .unzip::<_, _, Vec<_>, Vec<_>>();
+        .collect::<Vec<_>>();
 
     // if there are no set clauses, then we need to do an insert
     // because we can't do an update with no set clauses
     let query = build_query(opt, upsert_table, set_clauses, where_clauses);
-    let ttl_sv_push = if opt.ttl.unwrap_or(false) {
-        quote! {
-            values.add_named_value("set_ttl", &self.set_ttl)?;
-        }
-    } else {
-        quote! {}
-    };
 
     quote! {
         #input
@@ -179,16 +160,6 @@ pub(crate) fn upsert_impl(
             fn query() -> String {
                 #query.to_string()
             }
-
-            // fn bind(&self) -> scyllax::prelude::SerializedValuesResult {
-            //     let mut values = scylla_reexports::value::SerializedValues::new();
-
-            //     #(#set_sv_push)*
-            //     #(#where_sv_push)*
-            //     #ttl_sv_push
-
-            //     Ok(values)
-            // }
         }
 
         impl scyllax::prelude::WriteQuery for #upsert_struct {}
