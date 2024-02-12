@@ -2,7 +2,7 @@
 name = "scyllax"
 readme = "../README.md"
 description = "A SQLx and Discord inspired query system for Scylla"
-version = "0.2.0-alpha.1"
+version = "0.2.0-alpha.2"
 license.workspace = true
 edition.workspace = true
 authors.workspace = true
