@@ -5,6 +5,7 @@ use example::entities::post::{
     model::{LikeData, UpsertPost},
     queries::{GetPostById, PostQueries},
 };
+use scylla::frame::value::CqlTimeuuid;
 use scyllax::{executor::create_session, util::v1_uuid};
 use scyllax::{json::Json, prelude::*};
 use tracing_subscriber::prelude::*;
@@ -29,7 +30,7 @@ async fn main() -> anyhow::Result<()> {
     let session = create_session(known_nodes, default_keyspace).await?;
     let executor = Executor::<PostQueries>::new(Arc::new(session)).await?;
 
-    let post_id = v1_uuid();
+    let post_id = CqlTimeuuid::from(v1_uuid());
     let insert_body = UpsertPost {
         id: post_id,
         title: MaybeUnset::Set("Hello, World!".to_string()),

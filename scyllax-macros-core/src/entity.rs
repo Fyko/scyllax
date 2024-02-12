@@ -153,6 +153,7 @@ pub fn expand_attr(_args: TokenStream, input: TokenStream) -> TokenStream {
             Clone,
             Debug,
             PartialEq,
+            scylla::SerializeRow,
             scylla_reexports::FromRow,
             scylla_reexports::ValueList,
             scyllax::prelude::Entity

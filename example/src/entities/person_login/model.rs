@@ -1,3 +1,4 @@
+use scylla::frame::value::CqlTimeuuid;
 use scyllax::prelude::*;
 
 /// Represents a person in the database
@@ -6,10 +7,10 @@ use scyllax::prelude::*;
 pub struct PersonLoginEntity {
     /// The id of the person
     #[entity(primary_key)]
-    pub id: uuid::Uuid,
+    pub id: CqlTimeuuid,
     /// The email address of the person
     #[entity(primary_key)]
-    pub person_id: uuid::Uuid,
+    pub person_id: CqlTimeuuid,
     /// The number of times the person has logged in
     #[entity(counter)]
     pub count: scylla::frame::value::Counter,
@@ -19,7 +20,43 @@ pub struct PersonLoginEntity {
 mod test {
     use super::*;
     use pretty_assertions::assert_eq;
-    use scylla::frame::value::SerializedValues;
+    use scylla::{
+        frame::{
+            response::result::{ColumnSpec, ColumnType, PreparedMetadata, TableSpec},
+            value::Counter,
+        },
+        serialize::{
+            row::{RowSerializationContext, SerializeRow},
+            RowWriter,
+        },
+    };
+
+    fn col(name: &str, typ: ColumnType) -> ColumnSpec {
+        ColumnSpec {
+            table_spec: TableSpec {
+                ks_name: "ks".to_string(),
+                table_name: "tbl".to_string(),
+            },
+            name: name.to_string(),
+            typ,
+        }
+    }
+
+    fn do_serialize<T: SerializeRow>(t: T, columns: &[ColumnSpec]) -> Vec<u8> {
+        let prepared = PreparedMetadata {
+            col_specs: columns.to_vec(),
+            col_count: columns.len(),
+
+            flags: 0,
+            pk_indexes: vec![],
+        };
+        let ctx = RowSerializationContext::from_prepared(&prepared);
+
+        let mut ret = Vec::new();
+        let mut builder = RowWriter::new(&mut ret);
+        t.serialize(&ctx, &mut builder).unwrap();
+        ret
+    }
 
     #[test]
     fn test_pks() {
@@ -42,32 +79,27 @@ mod test {
     }
 
     #[test]
-    fn test_upsert() {
-        let upsert = UpsertPersonLogin {
-            id: v1_uuid(),
-            person_id: v1_uuid(),
-            count: 1.into(),
-        };
+    fn test_row_serialization() {
+        let spec = [
+            col("id", ColumnType::Timeuuid),
+            col("person_id", ColumnType::Timeuuid),
+            col("count", ColumnType::Counter),
+        ];
 
-        let query = <UpsertPersonLogin as Query>::query();
-        let values = <UpsertPersonLogin as Query>::bind(&upsert).unwrap();
+        let id = CqlTimeuuid::from(v1_uuid());
+        let person_id = CqlTimeuuid::from(v1_uuid());
+        let count = Counter(42);
 
-        assert_eq!(
-            query,
-            r#"update person_login set "count" = "count" + :count where "id" = :id and "person_id" = :person_id;"#
+        let reference = do_serialize((id, person_id, count), &spec);
+        let row = do_serialize(
+            PersonLoginEntity {
+                id,
+                person_id,
+                count,
+            },
+            &spec,
         );
 
-        let mut result_values = SerializedValues::new();
-        result_values
-            .add_named_value("count", &upsert.count)
-            .expect("failed to add value");
-        result_values
-            .add_named_value("id", &upsert.id)
-            .expect("failed to add value");
-        result_values
-            .add_named_value("person_id", &upsert.person_id)
-            .expect("failed to add value");
-
-        assert_eq!(values, result_values);
+        assert_eq!(row, reference);
     }
 }

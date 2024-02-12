@@ -143,6 +143,19 @@ pub fn expand(input: TokenStream) -> TokenStream {
                 <i32 as scylla::frame::value::Value>::serialize(&self.to_int(), buf)
             }
         }
+
+        impl SerializeCql for #ident {
+            fn serialize<'b>(
+                &self,
+                typ: &scylla::frame::response::result::ColumnType,
+                writer: scylla::serialize::CellWriter<'b>,
+            ) -> Result<
+                scylla::serialize::writers::WrittenCellProof<'b>,
+                scylla::serialize::SerializationError,
+            > {
+                <i32 as SerializeCql>::serialize(&self.to_int(), typ, writer)
+            }
+        }
     };
 
     quote! {

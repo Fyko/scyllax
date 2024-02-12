@@ -1,6 +1,6 @@
 use super::model::{UpsertPerson, UpsertPersonWithTTL};
+use scylla::{frame::value::CqlTimeuuid, SerializeRow};
 use scyllax::prelude::*;
-use uuid::Uuid;
 
 create_query_collection!(
     PersonQueries,
@@ -9,7 +9,7 @@ create_query_collection!(
 );
 
 /// Get a [`super::model::PersonEntity`] by its [`uuid::Uuid`]
-#[derive(Debug, Clone, PartialEq, ValueList, ReadQuery)]
+#[derive(Debug, Clone, PartialEq, SerializeRow, ReadQuery)]
 #[read_query(
     query = "select * from person where id = :id limit 1",
     return_type = "super::model::PersonEntity"
@@ -17,24 +17,24 @@ create_query_collection!(
 pub struct GetPersonById {
     /// The [`uuid::Uuid`] of the [`super::model::PersonEntity`] to get
     #[read_query(coalesce_shard_key)]
-    pub id: Uuid,
+    pub id: CqlTimeuuid,
 }
 
 /// Get many [`super::model::PersonEntity`] by many [`uuid::Uuid`]
-#[derive(Debug, Clone, PartialEq, ValueList, ReadQuery)]
+#[derive(Debug, Clone, PartialEq, SerializeRow, ReadQuery)]
 #[read_query(
     query = "select * from person where id in :ids limit :rowlimit",
     return_type = "Vec<super::model::PersonEntity>"
 )]
 pub struct GetPeopleByIds {
     /// The [`uuid::Uuid`]s of the [`super::model::PersonEntity`]s to get
-    pub ids: Vec<Uuid>,
+    pub ids: Vec<CqlTimeuuid>,
     /// The maximum number of [`super::model::PersonEntity`]s to get
     pub rowlimit: i32,
 }
 
 /// Get a [`super::model::PersonEntity`] by its email address
-#[derive(Debug, Clone, PartialEq, ValueList, ReadQuery)]
+#[derive(Debug, Clone, PartialEq, SerializeRow, ReadQuery)]
 #[read_query(
     query = "select * from person_by_email where email = :email limit 1",
     return_type = "super::model::PersonEntity"
@@ -49,7 +49,7 @@ pub struct GetPersonByEmail {
 #[write_query(query = "delete from person where id = :id")]
 pub struct DeletePersonById {
     /// The [`uuid::Uuid`] of the [`super::model::PersonEntity`] to get
-    pub id: Uuid,
+    pub id: CqlTimeuuid,
 }
 
 #[cfg(test)]
@@ -59,7 +59,9 @@ mod test {
 
     #[test]
     fn test_get_person_by_id() {
-        let _query = GetPersonById { id: v1_uuid() };
+        let _query = GetPersonById {
+            id: CqlTimeuuid::from(v1_uuid()),
+        };
 
         assert_eq!(
             GetPersonById::query(),
@@ -70,7 +72,7 @@ mod test {
     #[test]
     fn test_get_people_by_ids() {
         let _query = GetPeopleByIds {
-            ids: vec![v1_uuid(), v1_uuid()],
+            ids: vec![CqlTimeuuid::from(v1_uuid()), CqlTimeuuid::from(v1_uuid())],
             rowlimit: 10,
         };
 
@@ -94,7 +96,9 @@ mod test {
 
     #[test]
     fn test_delete_person_by_id() {
-        let _query = DeletePersonById { id: v1_uuid() };
+        let _query = DeletePersonById {
+            id: CqlTimeuuid::from(v1_uuid()),
+        };
 
         assert_eq!(
             DeletePersonById::query(),

@@ -1,7 +1,7 @@
 [package]
 name = "scyllax-parser"
 description = "A parser for CQL queries"
-version = "0.1.1"
+version = "0.2.0-alpha"
 license.workspace = true
 edition.workspace = true
 repository.workspace = true

@@ -1,5 +1,5 @@
 //! Example
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 
 use example::entities::{
     person::{
@@ -10,6 +10,7 @@ use example::entities::{
     },
     PersonEntity,
 };
+use scylla::frame::value::CqlTimeuuid;
 use scyllax::prelude::*;
 use scyllax::{executor::create_session, util::v1_uuid};
 use tracing_subscriber::prelude::*;
@@ -38,11 +39,11 @@ async fn main() -> anyhow::Result<()> {
         "e01e880a-414c-11ee-be56-0242ac120002",
     ]
     .iter()
-    .map(|s| Uuid::parse_str(s).unwrap())
+    .map(|s| CqlTimeuuid::from_str(s).unwrap())
     .collect::<Vec<_>>();
     by_ids(&executor, ids).await?;
 
-    let upsert_id = v1_uuid();
+    let upsert_id = CqlTimeuuid::from(v1_uuid());
     let query = UpsertPerson {
         id: upsert_id,
         email: "foo21@scyllax.local".to_string().into(),
@@ -60,7 +61,7 @@ async fn main() -> anyhow::Result<()> {
     let res = executor.execute_write(delete).await?;
     tracing::info!("DeletePersonById returned: {:?}", res);
 
-    let upsert_ttl_id = v1_uuid();
+    let upsert_ttl_id = CqlTimeuuid::from(v1_uuid());
     let query = UpsertPersonWithTTL {
         id: upsert_ttl_id,
         email: "foo42@scyllax.local".to_string().into(),
@@ -94,7 +95,10 @@ async fn by_email(
     Ok(res)
 }
 
-async fn by_id(executor: &Executor<PersonQueries>, id: Uuid) -> anyhow::Result<PersonEntity> {
+async fn by_id(
+    executor: &Executor<PersonQueries>,
+    id: CqlTimeuuid,
+) -> anyhow::Result<PersonEntity> {
     let res = executor
         .execute_read(GetPersonById { id })
         .await?
@@ -107,7 +111,7 @@ async fn by_id(executor: &Executor<PersonQueries>, id: Uuid) -> anyhow::Result<P
 
 async fn by_ids(
     executor: &Executor<PersonQueries>,
-    ids: Vec<Uuid>,
+    ids: Vec<CqlTimeuuid>,
 ) -> anyhow::Result<Vec<PersonEntity>> {
     let res = executor
         .execute_read(GetPeopleByIds { ids, rowlimit: 10 })

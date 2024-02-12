@@ -9,9 +9,10 @@ use std::{
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use console::style;
-use scylla::{frame::value::Timestamp, query::Query};
+use scylla::{frame::value::CqlTimestamp, query::Query};
 use scyllax::prelude::Executor;
 use sha2::{Digest, Sha384};
+use time::OffsetDateTime;
 
 use crate::model::{DeleteByVersion, MigrationQueries, UpsertMigration};
 
@@ -118,10 +119,7 @@ impl MigrationMode for UpMigration {
             bucket: 0,
             version: migration.version,
             description: migration.description.clone().into(),
-            installed_on: Timestamp(chrono::Duration::seconds(
-                time::OffsetDateTime::now_utc().unix_timestamp(),
-            ))
-            .into(),
+            installed_on: CqlTimestamp(OffsetDateTime::now_utc().unix_timestamp()).into(),
             success: true.into(),
             checksum: checksum.into(),
             execution_time: 0.into(),

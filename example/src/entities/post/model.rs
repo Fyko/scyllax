@@ -1,3 +1,4 @@
+use scylla::frame::value::CqlTimeuuid;
 use scyllax::{json::Json, prelude::*};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -14,7 +15,7 @@ pub struct LikeData {
 pub struct PostEntity {
     /// The id of the post
     #[entity(primary_key)]
-    pub id: Uuid,
+    pub id: CqlTimeuuid,
     /// The title of the post
     pub title: String,
     /// The likes on the post (dont store likes like this in production, this is just to test Json<T>)

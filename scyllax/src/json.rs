@@ -2,7 +2,11 @@ use std::fmt::Debug;
 
 use scylla::{
     cql_to_rust::{FromCqlVal, FromCqlValError},
-    frame::{response::result::CqlValue, value::Value as ScyllaValue},
+    frame::{
+        response::result::{ColumnType, CqlValue},
+        value::Value as ScyllaValue,
+    },
+    serialize::{value::SerializeCql, writers::WrittenCellProof, CellWriter, SerializationError},
 };
 use serde::{de::DeserializeOwned, Serialize};
 
@@ -17,8 +21,19 @@ impl<T: Debug + Clone + Serialize + DeserializeOwned> std::fmt::Debug for Json<T
 
 impl<T: Debug + Clone + Serialize + DeserializeOwned> ScyllaValue for Json<T> {
     fn serialize(&self, buf: &mut Vec<u8>) -> Result<(), scylla::frame::value::ValueTooBig> {
+        let data = serde_json::to_string(&self.0).unwrap();
+        <String as ScyllaValue>::serialize(&data, buf)
+    }
+}
+
+impl<T: Debug + Clone + Serialize + DeserializeOwned> SerializeCql for Json<T> {
+    fn serialize<'b>(
+        &self,
+        typ: &ColumnType,
+        writer: CellWriter<'b>,
+    ) -> Result<WrittenCellProof<'b>, SerializationError> {
         let data = serde_json::to_vec(&self.0).unwrap();
-        <Vec<u8> as ScyllaValue>::serialize(&data, buf)
+        <Vec<u8> as SerializeCql>::serialize(&data, typ, writer)
     }
 }
 

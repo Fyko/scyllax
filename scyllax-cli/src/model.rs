@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use scylla::frame::value::Timestamp;
+use scylla::{frame::value::CqlTimestamp, SerializeRow};
 use scyllax::prelude::*;
 
 create_query_collection!(
@@ -28,14 +28,14 @@ pub struct MigrationEntity {
     #[entity(primary_key)]
     pub bucket: i32,
     pub description: String,
-    pub installed_on: Timestamp,
+    pub installed_on: CqlTimestamp,
     pub success: bool,
     pub checksum: Vec<u8>,
     pub execution_time: i64,
 }
 
 // get the latest version from the database
-#[derive(Debug, Clone, PartialEq, ValueList, ReadQuery)]
+#[derive(Debug, Clone, PartialEq, SerializeRow, ReadQuery)]
 #[read_query(
     query_nocheck = "select * from migration where bucket = 0 order by version desc limit 1",
     return_type = "MigrationEntity"

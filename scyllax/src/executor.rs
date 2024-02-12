@@ -239,8 +239,8 @@ impl<T: QueryCollection + Clone> Executor<T> {
         T: GetPreparedStatement<Q> + GetCoalescingSender<Q>,
     {
         let statement = self.queries.get_prepared::<Q>();
-        let variables = query.bind().unwrap();
-        let response = match self.session.execute(statement, variables).await {
+        // let variables = query.bind().unwrap();
+        let response = match self.session.execute(statement, query).await {
             Ok(response) => {
                 tracing::debug!(
                     "query executed successfully: {:?} rows",
@@ -264,10 +264,9 @@ impl<T: QueryCollection + Clone> Executor<T> {
         T: GetPreparedStatement<Q>,
     {
         let statement = self.queries.get_prepared::<Q>();
-        let variables = query.bind()?;
 
         self.session
-            .execute(statement, variables)
+            .execute(statement, query)
             .await
             .map_err(Into::into)
     }

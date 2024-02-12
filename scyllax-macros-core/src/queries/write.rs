@@ -43,7 +43,7 @@ pub fn expand(args: TokenStream, item: TokenStream) -> TokenStream {
     let struct_ident = &input.ident;
 
     quote! {
-        #[derive(std::fmt::Debug, std::clone::Clone, PartialEq, Hash)]
+        #[derive(std::fmt::Debug, std::clone::Clone, PartialEq, Hash, scylla::SerializeRow)]
         #input
 
         #impl_query

@@ -16,8 +16,8 @@ impl std::fmt::Debug for JsonBlob {
 
 impl scylla::frame::value::Value for JsonBlob {
     fn serialize(&self, buf: &mut Vec<u8>) -> Result<(), scylla::frame::value::ValueTooBig> {
-        let data = serde_json::to_vec(&self.0).unwrap();
-        <Vec<u8> as scylla::frame::value::Value>::serialize(&data, buf)
+        let data = serde_json::to_string(&self.0).unwrap();
+        <String as scylla::frame::value::Value>::serialize(&data, buf)
     }
 }
 

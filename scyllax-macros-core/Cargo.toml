@@ -1,7 +1,7 @@
 [package]
 name = "scyllax-macros-core"
 description = "Core macro impl for scyllax"
-version = "0.1.1"
+version = "0.2.0-alpha"
 license.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -15,5 +15,5 @@ convert_case = "0.6.0"
 darling = { version = "0.20", features = ["suggestions"] }
 proc-macro2 = "1"
 quote = "1"
-scyllax-parser = { path = "../scyllax-parser", version = "0.1.1" }
+scyllax-parser = { path = "../scyllax-parser", version = "0.2.0-alpha" }
 syn = { version = "2", features = ["full", "derive", "extra-traits"] }

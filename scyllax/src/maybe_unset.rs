@@ -1,13 +1,28 @@
 //! A wrapper around a value that can be unincluded but not overwritten/made null
 use scylla::{
     _macro_internal::{Value, ValueTooBig},
-    frame::value::{Counter, Unset},
+    frame::{response::result::ColumnType, value::Counter},
+    serialize::{value::SerializeCql, writers::WrittenCellProof, CellWriter, SerializationError},
+    BufMut,
 };
 
+/// Represents an unset value
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Unset;
+
+impl Value for Unset {
+    fn serialize(&self, buf: &mut Vec<u8>) -> Result<(), ValueTooBig> {
+        // Unset serializes itself to empty value with length = -2
+        buf.put_i32(-2);
+        Ok(())
+    }
+}
+
 /// A wrapper around a value that can be unincluded but not overwritten/made null
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum MaybeUnset<V: Value> {
+#[derive(Clone, Copy, Default, Debug, PartialEq)]
+pub enum MaybeUnset<V> {
     /// The value is unset but shouldn't be overwritten
+    #[default]
     Unset,
     /// The value is set
     Set(V),
@@ -18,6 +33,19 @@ impl<V: Value> Value for MaybeUnset<V> {
         match self {
             MaybeUnset::Set(v) => v.serialize(buf),
             MaybeUnset::Unset => Unset.serialize(buf),
+        }
+    }
+}
+
+impl<V: SerializeCql> SerializeCql for MaybeUnset<V> {
+    fn serialize<'b>(
+        &self,
+        typ: &ColumnType,
+        writer: CellWriter<'b>,
+    ) -> Result<WrittenCellProof<'b>, SerializationError> {
+        match self {
+            MaybeUnset::Set(v) => v.serialize(typ, writer),
+            MaybeUnset::Unset => Ok(writer.set_unset()),
         }
     }
 }

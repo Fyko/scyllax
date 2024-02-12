@@ -105,7 +105,7 @@ pub(crate) fn upsert_impl(
     );
     let expanded_upsert_struct = quote! {
         #[doc = #docs]
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Clone, scylla::SerializeRow)]
         pub struct #upsert_struct {
             #(#expanded_pks,)*
             #(#maybe_unset_fields,)*
@@ -180,15 +180,15 @@ pub(crate) fn upsert_impl(
                 #query.to_string()
             }
 
-            fn bind(&self) -> scyllax::prelude::SerializedValuesResult {
-                let mut values = scylla_reexports::value::SerializedValues::new();
+            // fn bind(&self) -> scyllax::prelude::SerializedValuesResult {
+            //     let mut values = scylla_reexports::value::SerializedValues::new();
 
-                #(#set_sv_push)*
-                #(#where_sv_push)*
-                #ttl_sv_push
+            //     #(#set_sv_push)*
+            //     #(#where_sv_push)*
+            //     #ttl_sv_push
 
-                Ok(values)
-            }
+            //     Ok(values)
+            // }
         }
 
         impl scyllax::prelude::WriteQuery for #upsert_struct {}

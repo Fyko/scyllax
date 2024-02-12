@@ -22,8 +22,8 @@ pub fn expand(input: TokenStream) -> TokenStream {
                 &self,
                 buf: &mut Vec<u8>
             ) -> Result<(), scylla::frame::value::ValueTooBig> {
-                let data = serde_json::to_vec(self).unwrap();
-                <Vec<u8> as scylla::frame::value::Value>::serialize(&data, buf)
+                let data = serde_json::to_string(self).unwrap();
+                <String as scylla::frame::value::Value>::serialize(&data, buf)
             }
         }
 
@@ -40,6 +40,20 @@ pub fn expand(input: TokenStream) -> TokenStream {
                 serde_json::from_str(&data)
                     .ok()
                     .ok_or(scylla::cql_to_rust::FromCqlValError::BadCqlType)
+            }
+        }
+
+        impl SerializeCql for #ident {
+            fn serialize<'b>(
+                &self,
+                typ: &scylla::frame::response::result::ColumnType,
+                writer: scylla::serialize::CellWriter<'b>,
+            ) -> Result<
+                scylla::serialize::writers::WrittenCellProof<'b>,
+                scylla::serialize::SerializationError,
+            > {
+                let data = serde_json::to_string(&self).unwrap();
+                <String as SerializeCql>::serialize(&data, typ, writer)
             }
         }
     };
