@@ -1418,7 +1418,7 @@ dependencies = [
 
 [[package]]
 name = "scyllax"
-version = "0.2.0-alpha.2"
+version = "0.2.0-alpha.3"
 dependencies = [
  "async-trait",
  "getrandom",
@@ -1461,14 +1461,14 @@ dependencies = [
 
 [[package]]
 name = "scyllax-macros"
-version = "0.2.0-alpha.1"
+version = "0.2.0-alpha.3"
 dependencies = [
  "scyllax-macros-core",
 ]
 
 [[package]]
 name = "scyllax-macros-core"
-version = "0.2.0-alpha.1"
+version = "0.2.0-alpha.3"
 dependencies = [
  "convert_case",
  "darling",

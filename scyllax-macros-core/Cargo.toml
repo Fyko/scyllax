@@ -1,7 +1,7 @@
 [package]
 name = "scyllax-macros-core"
 description = "Core macro impl for scyllax"
-version = "0.2.0-alpha.1"
+version = "0.2.0-alpha.3"
 license.workspace = true
 edition.workspace = true
 authors.workspace = true
