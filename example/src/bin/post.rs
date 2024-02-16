@@ -5,7 +5,7 @@ use example::entities::post::{
     model::{LikeData, UpsertPost},
     queries::{GetPostById, PostQueries},
 };
-use scylla::frame::value::CqlTimeuuid;
+use scylla::frame::value::{CqlTimestamp, CqlTimeuuid};
 use scyllax::{executor::create_session, util::v1_uuid};
 use scyllax::{json::Json, prelude::*};
 use tracing_subscriber::prelude::*;
@@ -38,7 +38,7 @@ async fn main() -> anyhow::Result<()> {
             user_id: Uuid::new_v4(),
             created_at: now(),
         }]))),
-        created_at: MaybeUnset::Set(now()),
+        created_at: MaybeUnset::Set(CqlTimestamp(now())),
     };
     eprintln!("inserting post: {insert_body:#?}");
     executor.execute_write(insert_body).await?;

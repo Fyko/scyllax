@@ -53,7 +53,7 @@ pub fn expand(input: TokenStream) -> TokenStream {
                 scylla::serialize::SerializationError,
             > {
                 let data = serde_json::to_string(&self).unwrap();
-                <String as SerializeCql>::serialize(&data, typ, writer)
+                <String as scylla::serialize::value::SerializeCql>::serialize(&data, typ, writer)
             }
         }
     };

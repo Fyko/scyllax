@@ -32,8 +32,8 @@ impl<T: Debug + Clone + Serialize + DeserializeOwned> SerializeCql for Json<T> {
         typ: &ColumnType,
         writer: CellWriter<'b>,
     ) -> Result<WrittenCellProof<'b>, SerializationError> {
-        let data = serde_json::to_vec(&self.0).unwrap();
-        <Vec<u8> as SerializeCql>::serialize(&data, typ, writer)
+        let data = serde_json::to_string(&self.0).unwrap();
+        <String as SerializeCql>::serialize(&data, typ, writer)
     }
 }
 

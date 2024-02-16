@@ -1,4 +1,4 @@
-use scylla::frame::value::CqlTimeuuid;
+use scylla::frame::value::{CqlTimestamp, CqlTimeuuid};
 use scyllax::{json::Json, prelude::*};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -21,7 +21,7 @@ pub struct PostEntity {
     /// The likes on the post (dont store likes like this in production, this is just to test Json<T>)
     pub likes: Option<Json<Vec<LikeData>>>,
     /// The date the post was created
-    pub created_at: i64,
+    pub created_at: CqlTimestamp,
 }
 
 #[cfg(test)]
