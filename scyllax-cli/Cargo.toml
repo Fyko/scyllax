@@ -1,7 +1,7 @@
 [package]
 name = "scyllax-cli"
 description = "The CLI for scyllax -- mainly managing migrations"
-version = "0.2.0-alpha.1"
+version = "0.2.0"
 license.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -23,7 +23,7 @@ url = { version = "2.5.0", default-features = false }
 async-trait = "0.1"
 console = "0.15.7"
 scylla.workspace = true
-scyllax = { version = "0.2.0-alpha.1", path = "../scyllax" }
+scyllax = { version = "0.2.0", path = "../scyllax" }
 serde_json = "1.0.108"
 serde = { version = "1.0.193", features = ["derive"] }
 tracing-subscriber.workspace = true

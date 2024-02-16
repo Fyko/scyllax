@@ -1418,7 +1418,7 @@ dependencies = [
 
 [[package]]
 name = "scyllax"
-version = "0.2.0-alpha.3"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "getrandom",
@@ -1438,7 +1438,7 @@ dependencies = [
 
 [[package]]
 name = "scyllax-cli"
-version = "0.2.0-alpha.1"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1461,14 +1461,14 @@ dependencies = [
 
 [[package]]
 name = "scyllax-macros"
-version = "0.2.0-alpha.3"
+version = "0.2.0"
 dependencies = [
  "scyllax-macros-core",
 ]
 
 [[package]]
 name = "scyllax-macros-core"
-version = "0.2.0-alpha.3"
+version = "0.2.0"
 dependencies = [
  "convert_case",
  "darling",
@@ -1481,7 +1481,7 @@ dependencies = [
 
 [[package]]
 name = "scyllax-parser"
-version = "0.2.0-alpha"
+version = "0.2.0"
 dependencies = [
  "criterion",
  "nom",

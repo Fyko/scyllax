@@ -2,7 +2,7 @@
 name = "scyllax"
 readme = "../README.md"
 description = "A SQLx and Discord inspired query system for Scylla"
-version = "0.2.0-alpha.3"
+version = "0.2.0"
 license.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -15,8 +15,8 @@ getrandom = "0.2"
 mac_address = "1"
 once_cell = "1"
 scylla.workspace = true
-scyllax-macros = { version = "0.2.0-alpha.3", path = "../scyllax-macros" }
-scyllax-macros-core = { version = "0.2.0-alpha.3", path = "../scyllax-macros-core" }
+scyllax-macros = { version = "0.2.0", path = "../scyllax-macros" }
+scyllax-macros-core = { version = "0.2.0", path = "../scyllax-macros-core" }
 thiserror = "1"
 tokio.workspace = true
 tracing.workspace = true
