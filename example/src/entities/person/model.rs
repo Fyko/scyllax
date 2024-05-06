@@ -1,5 +1,4 @@
 use scylla::frame::value::{CqlTimestamp, CqlTimeuuid};
-use scylla::serialize::value::SerializeCql;
 use scyllax::prelude::*;
 
 /// Represents data from a person
