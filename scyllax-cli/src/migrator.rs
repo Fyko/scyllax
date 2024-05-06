@@ -1,5 +1,6 @@
 use std::{
     borrow::Cow,
+    fmt::Display,
     fs::ReadDir,
     path::{Path, PathBuf},
     sync::Arc,
@@ -18,13 +19,9 @@ use crate::model::{DeleteByVersion, MigrationQueries, UpsertMigration};
 
 /// A marker struct provided to the [`Migrator`] to indicate that it should run up migrations.
 pub struct UpMigration;
-trait UpMigrationExt {}
-impl UpMigrationExt for UpMigration {}
 
 /// A marker struct provided to the [`Migrator`] to indicate that it should run down migrations.
 pub struct DownMigration;
-trait DownMigrationExt {}
-impl DownMigrationExt for DownMigration {}
 
 #[async_trait]
 pub trait MigrationMode {
@@ -251,11 +248,11 @@ impl<K: MigrationMode> TryFrom<Cow<'_, str>> for MigrationFolder<K> {
     }
 }
 
-impl<K: MigrationMode> ToString for MigrationFolder<K> {
-    /// Convert the migration folder to a string, which is the version and description joined by an
-    /// underscore.
-    fn to_string(&self) -> String {
-        format!("{}_{}", self.version, self.description.replace(' ', "_"))
+/// Convert the migration folder to a string, which is the version and description joined by an
+/// underscore.
+impl<K: MigrationMode> Display for MigrationFolder<K> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}_{}", self.version, self.description.replace(' ', "_"))
     }
 }
 
