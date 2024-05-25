@@ -1,6 +1,6 @@
 create keyspace if not exists scyllax with replication = {
-	'class': 'SimpleStrategy',
-	'replication_factor': 1
+	'class': 'NetworkTopologyStrategy',
+	'replication_factor': 3
 };
 
 create table if not exists scyllax.person (
@@ -19,7 +19,7 @@ create materialized view if not exists scyllax.person_by_email as
   where email is not null and id is not null
   primary key (email, id);
 
-create materialized view if not exists "person_by_createdAt"  as
+create materialized view if not exists scyllax."person_by_createdAt"  as
   select *
   from person
   where "createdAt" is not null and id is not null
