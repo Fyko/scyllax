@@ -13,6 +13,7 @@ pub struct ReadQueryDeriveVariable {
     pub ty: Type,
     #[darling(default)]
     pub coalesce_shard_key: bool,
+    pub hash_fn: Option<syn::Path>,
 }
 
 #[derive(Debug, PartialEq, FromDeriveInput)]
@@ -164,12 +165,23 @@ pub fn expand(input: TokenStream) -> TokenStream {
     let shard_keys = fields
         .iter()
         .filter(|v| v.coalesce_shard_key)
-        .map(|v| v.ident.as_ref().unwrap())
-        .collect::<Vec<&Ident>>();
+        .collect::<Vec<&ReadQueryDeriveVariable>>();
     let shard_key: Vec<TokenStream> = if !shard_keys.is_empty() {
         shard_keys
             .iter()
-            .map(|sk| quote! { self.#sk.hash(state); })
+            .map(|sk| {
+                if let Some(hash_fn) = &sk.hash_fn {
+                    let ident = sk.ident.as_ref().unwrap();
+                    quote! {
+                        #hash_fn(&self.#ident).hash(state);
+                    }
+                } else {
+                    let ident = sk.ident.as_ref().unwrap();
+                    quote! {
+                        self.#ident.hash(state);
+                    }
+                }
+            })
             .collect::<Vec<TokenStream>>()
     } else {
         // by default, if there are no shard keys specified, do every field

@@ -1,12 +1,34 @@
 use super::model::{UpsertPerson, UpsertPersonWithTTL};
 use scylla::{frame::value::CqlTimeuuid, SerializeRow};
 use scyllax::prelude::*;
+use value::CqlTimestamp;
 
 create_query_collection!(
     PersonQueries,
-    [GetPersonById, GetPeopleByIds, GetPersonByEmail],
+    [
+        GetPersonById,
+        GetPeopleByIds,
+        GetPersonByEmail,
+        GetPeopleCreatedBefore
+    ],
     [DeletePersonById, UpsertPerson, UpsertPersonWithTTL]
 );
+
+#[inline]
+fn hash_cql_timestamp(timestamp: &CqlTimestamp) -> i64 {
+    timestamp.0
+}
+
+#[derive(Debug, Clone, PartialEq, SerializeRow, ReadQuery)]
+#[read_query(
+    query = r#"select * from "person_by_createdAt" where "createdAt" <= :created_before limit :rowlimit"#,
+    return_type = "Vec<super::model::PersonEntity>"
+)]
+pub struct GetPeopleCreatedBefore {
+    #[read_query(coalesce_shard_key, hash_fn = "hash_cql_timestamp")]
+    pub created_before: CqlTimestamp,
+    pub rowlimit: i32,
+}
 
 /// Get a [`super::model::PersonEntity`] by its [`uuid::Uuid`]
 #[derive(Debug, Clone, PartialEq, SerializeRow, ReadQuery)]
