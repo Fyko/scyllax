@@ -5,7 +5,8 @@ use example::entities::{
     person::{
         model::{PersonData, PersonKind, UpsertPerson, UpsertPersonWithTTL},
         queries::{
-            DeletePersonById, GetPeopleByIds, GetPersonByEmail, GetPersonById, PersonQueries,
+            DeletePersonById, GetPeopleByIds, GetPeopleCreatedBefore, GetPersonByEmail,
+            GetPersonById, PersonQueries,
         },
     },
     PersonEntity,
@@ -13,7 +14,9 @@ use example::entities::{
 use scylla::frame::value::CqlTimeuuid;
 use scyllax::prelude::*;
 use scyllax::{executor::create_session, util::v1_uuid};
+use time::{Duration, OffsetDateTime};
 use tracing_subscriber::prelude::*;
+use value::CqlTimestamp;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -76,6 +79,37 @@ async fn main() -> anyhow::Result<()> {
     };
     let res = executor.execute_write(query).await?;
     tracing::info!("UpsertPersonWithTTL returned: {:?}", res);
+
+    let old_user_id = v1_uuid();
+    let one_year_ago = OffsetDateTime::now_utc() - Duration::days(365);
+    let query = UpsertPerson {
+        id: CqlTimeuuid::from(old_user_id),
+        email: MaybeUnset::Set("foo55@scyllax.local".to_string()),
+        age: MaybeUnset::Set(Some(55)),
+        data: MaybeUnset::Unset,
+        kind: MaybeUnset::Set(PersonKind::Staff),
+        created_at: MaybeUnset::Set(CqlTimestamp::from(one_year_ago)),
+    };
+    executor.execute_write(query).await?;
+
+    let get_old = executor
+        .execute_read(GetPeopleCreatedBefore {
+            created_before: CqlTimestamp::from(OffsetDateTime::now_utc() - Duration::weeks(12)),
+            rowlimit: 10,
+        })
+        .await?;
+    assert!(
+        get_old
+            .iter()
+            .any(|p| p.id == CqlTimeuuid::from(old_user_id)),
+        "Old user not found"
+    );
+
+    executor
+        .execute_write(DeletePersonById {
+            id: CqlTimeuuid::from(old_user_id),
+        })
+        .await?;
 
     Ok(())
 }

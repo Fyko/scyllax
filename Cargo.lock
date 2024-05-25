@@ -1400,6 +1400,7 @@ dependencies = [
  "scylla-macros",
  "snap",
  "thiserror",
+ "time",
  "tokio",
  "uuid",
 ]
