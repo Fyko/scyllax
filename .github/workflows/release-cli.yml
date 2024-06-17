@@ -133,7 +133,7 @@ jobs:
             type=raw,value=${{ steps.parse_tag.outputs.version }}
 
       - name: Build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           build-args: BUNDLE_URL=${{ needs.publish_cli.outputs.bundle_url }}
           context: .
