@@ -100,7 +100,7 @@ jobs:
       packages: write
       contents: read
     env:
-      slug: ghcr.io/trufflehq/scyllax-cli
+      slug: ghcr.io/fyko/scyllax-cli
       dockerfile: ./scyllax-cli/Dockerfile
     steps:
       - name: Checkout Repository

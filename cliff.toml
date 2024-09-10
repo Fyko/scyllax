@@ -23,7 +23,7 @@ conventional_commits = true
 filter_unconventional = true
 commit_preprocessors = [
     # replace issues with issue links
-    { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](https://github.com/trufflehq/scyllax/issues/${2}))" },
+    { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](https://github.com/fyko/scyllax/issues/${2}))" },
 ]
 commit_parsers = [
     { message = "^build", group = "Build" },

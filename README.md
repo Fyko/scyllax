@@ -1,9 +1,9 @@
 # scyllax (sɪl-æks)
 A SQLx and Discord inspired query system for Scylla.
 
-[![discord](https://img.shields.io/discord/1080316613968011335?color=5865F2&logo=discord&logoColor=white)](https://discord.gg/FahQSBMMGg)
-[![codecov](https://codecov.io/gh/trufflehq/scyllax/graph/badge.svg?token=OGH77YR0TA)](https://codecov.io/gh/trufflehq/scyllax)
-[![CI](https://github.com/trufflehq/scyllax/actions/workflows/ci.yml/badge.svg)](https://github.com/trufflehq/scyllax/actions/workflows/ci.yml)
+[![discord](https://img.shields.io/discord/1041931589631881257?color=5865F2&logo=discord&logoColor=white)](https://discord.gg/HnyYTnQzJW)
+[![codecov](https://codecov.io/gh/fyko/scyllax/graph/badge.svg?token=OGH77YR0TA)](https://codecov.io/gh/fyko/scyllax)
+[![CI](https://github.com/fyko/scyllax/actions/workflows/ci.yml/badge.svg)](https://github.com/fyko/scyllax/actions/workflows/ci.yml)
 
 ## Example
 ### 1. Model definition
@@ -61,7 +61,7 @@ create_query_collection!(
 let executor = Executor::<PersonQueries>::new(Arc::new(session)).await;
 
 let user = executor.execute_read(GetPersonByEmail {
-    email: "user@truffle.vip".to_string(),
+    email: "user@fyko.net".to_string(),
 }).await?;
 
 println!("{user:#?}");
@@ -69,15 +69,15 @@ println!("{user:#?}");
 
 ## Features
 - [x] Read Queries
-- [x] Write Queries (https://github.com/trufflehq/scyllax/pull/1)
-- [ ] Request Coalescing
+- [x] Write Queries (https://github.com/fyko/scyllax/pull/1)
+- [x] Request Coalescing
 - [x] Compile-time Select Query Validation
   - ensure the where constraints exist on the struct
   - ensure the where constraints are the same type as the struct
 - [ ] Runtime Query Validation (structure matches schema)
 
 ### Todo
-- [ ] Eject `anyhow`, more refined errors
+- [x] Eject `anyhow`, more refined errors
 
 ## Usage
 See the [example](example) for more details.

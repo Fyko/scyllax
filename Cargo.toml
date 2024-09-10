@@ -5,13 +5,13 @@ resolver = "2"
 [workspace.package]
 license = "MIT OR Apache-2.0"
 edition = "2021"
-repository = "https://github.com/trufflehq/scyllax"
+repository = "https://github.com/fyko/scyllax"
 keywords = ["scylla", "cassandra", "orm", "sqlx", "truffle"]
 categories = ["database", "concurrency"]
 authors = [
-    "Carter Himmel <carter@truffle.vip>"
+    "Carter Himmel <me@fyko.net>"
 ]
-homepage = "https://github.com/trufflehq/scyllax#readme"
+homepage = "https://github.com/fyko/scyllax#readme"
 readme = "README.md"
 
 [workspace.dependencies]
