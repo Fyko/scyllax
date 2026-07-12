@@ -78,6 +78,16 @@ pub struct DeletePersonById {
 mod test {
     use super::*;
     use pretty_assertions::assert_eq;
+    use std::{
+        collections::hash_map::DefaultHasher,
+        hash::{Hash, Hasher},
+    };
+
+    fn identity_hash(value: &impl Hash) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        value.hash(&mut hasher);
+        hasher.finish()
+    }
 
     #[test]
     fn test_get_person_by_id() {
@@ -126,5 +136,46 @@ mod test {
             DeletePersonById::query(),
             r#"delete from person where id = :id"#
         );
+    }
+
+    #[test]
+    fn default_identity_hash_includes_all_fields() {
+        let ids = vec![CqlTimeuuid::from(v1_uuid())];
+        let first = GetPeopleByIds {
+            ids: ids.clone(),
+            rowlimit: 10,
+        };
+        let second = GetPeopleByIds { ids, rowlimit: 20 };
+
+        assert_ne!(identity_hash(&first), identity_hash(&second));
+    }
+
+    #[test]
+    fn selected_created_before_shard_key_excludes_rowlimit() {
+        let first = GetPeopleCreatedBefore {
+            created_before: CqlTimestamp(7),
+            rowlimit: 10,
+        };
+        let second = GetPeopleCreatedBefore {
+            created_before: CqlTimestamp(7),
+            rowlimit: 20,
+        };
+
+        assert_eq!(identity_hash(&first), identity_hash(&second));
+    }
+
+    #[test]
+    #[ignore = "plan 003: created-before identity must include rowlimit"]
+    fn created_before_with_different_limits_has_distinct_identity() {
+        let first = GetPeopleCreatedBefore {
+            created_before: CqlTimestamp(7),
+            rowlimit: 10,
+        };
+        let second = GetPeopleCreatedBefore {
+            created_before: CqlTimestamp(7),
+            rowlimit: 20,
+        };
+
+        assert_ne!(identity_hash(&first), identity_hash(&second));
     }
 }
