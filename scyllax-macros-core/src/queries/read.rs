@@ -1,3 +1,5 @@
+#![allow(clippy::manual_unwrap_or_default, clippy::needless_continue)]
+
 use darling::{ast, FromDeriveInput, FromField};
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
@@ -323,4 +325,61 @@ fn parse_query(
     }
 
     Ok(parsed)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use quote::quote;
+
+    #[test]
+    fn default_hashing_includes_every_field() {
+        let expanded = expand(quote! {
+            #[derive(Debug, scylla::SerializeRow)]
+            #[read_query(query_nocheck = "select value from test", return_type = "String")]
+            struct DefaultIdentity {
+                first: i64,
+                second: i32,
+            }
+        })
+        .to_string();
+
+        assert!(expanded.contains("self . first . hash (state)"));
+        assert!(expanded.contains("self . second . hash (state)"));
+    }
+
+    #[test]
+    fn selected_shard_key_excludes_unselected_fields() {
+        let expanded = expand(quote! {
+            #[derive(Debug, scylla::SerializeRow)]
+            #[read_query(query_nocheck = "select value from test", return_type = "String")]
+            struct SelectedIdentity {
+                #[read_query(coalesce_shard_key)]
+                selected: i64,
+                unselected: i32,
+            }
+        })
+        .to_string();
+
+        assert!(expanded.contains("self . selected . hash (state)"));
+        assert!(!expanded.contains("self . unselected . hash (state)"));
+    }
+
+    #[test]
+    #[ignore = "plan 003: created-before identity must include rowlimit"]
+    fn created_before_and_rowlimit_both_contribute_to_identity() {
+        let expanded = expand(quote! {
+            #[derive(Debug, scylla::SerializeRow)]
+            #[read_query(query_nocheck = "select value from test", return_type = "String")]
+            struct CreatedBeforeIdentity {
+                #[read_query(coalesce_shard_key)]
+                created_before: i64,
+                rowlimit: i32,
+            }
+        })
+        .to_string();
+
+        assert!(expanded.contains("self . created_before . hash (state)"));
+        assert!(expanded.contains("self . rowlimit . hash (state)"));
+    }
 }

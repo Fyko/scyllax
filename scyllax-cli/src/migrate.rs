@@ -70,7 +70,7 @@ pub async fn run(
         .iter()
         .scan((), |_, x| x.ok())
         .collect::<Vec<MigrationFolder<UpMigration>>>();
-    migration_folders.sort_by(|a, b| a.version.cmp(&b.version));
+    migration_folders.sort_by_key(|migration| migration.version);
 
     if migration_folders.is_empty() {
         println!("No pending migrations");

@@ -9,55 +9,6 @@ pub fn expand_attr(_args: TokenStream, input: TokenStream) -> TokenStream {
     }
 }
 
-/// Enum for source type
-// #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-// pub enum EmoteProvider {
-//     Custom = 0,
-//     BTTV = 1,
-//     SevenTV = 2,
-// }
-
-// impl TryFrom<i32> for EmoteProvider {
-//     type Error = Box<dyn std::error::Error>;
-
-//     fn try_from(value: i32) -> Result<Self, Self::Error> {
-//         match value {
-//             0 => Ok(EmoteProvider::Custom),
-//             1 => Ok(EmoteProvider::BTTV),
-//             2 => Ok(EmoteProvider::SevenTV),
-//             _ => Err(anyhow::anyhow!("Invalid EmoteProvider").into()),
-//         }
-//     }
-// }
-
-// impl EmoteProvider {
-//     fn to_int(&self) -> i32 {
-//         match self {
-//             Self::Custom => 0,
-//             Self::BTTV => 1,
-//             Self::SevenTV => 2,
-//         }
-//     }
-// }
-
-// impl scylla::cql_to_rust::FromCqlVal<scylla::frame::response::result::CqlValue> for EmoteProvider {
-//     fn from_cql(
-//         cql_val: scylla::frame::response::result::CqlValue,
-//     ) -> Result<Self, scylla::cql_to_rust::FromCqlValError> {
-//         let data = <i32 as scylla::cql_to_rust::FromCqlVal<
-//             scylla::frame::response::result::CqlValue,
-//         >>::from_cql(cql_val)?;
-
-//         EmoteProvider::try_from(data).map_err(|_| scylla::cql_to_rust::FromCqlValError::BadVal)
-//     }
-// }
-
-// impl scylla::frame::value::Value for EmoteProvider {
-//     fn serialize(&self, buf: &mut Vec<u8>) -> Result<(), scylla::frame::value::ValueTooBig> {
-//         <i32 as scylla::frame::value::Value>::serialize(&self.to_int(), buf)
-//     }
-// }
-
 pub fn expand(input: TokenStream) -> TokenStream {
     let input: ItemEnum = match syn::parse2(input.clone()) {
         Ok(it) => it,

@@ -1,6 +1,6 @@
 create keyspace if not exists scyllax with replication = {
 	'class': 'NetworkTopologyStrategy',
-	'replication_factor': 3
+	'datacenter1': 1
 };
 
 create table if not exists scyllax.person (
