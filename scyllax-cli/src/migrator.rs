@@ -203,7 +203,7 @@ impl<K: MigrationMode> MigrationFolder<K> {
 
         let mut path = std::path::PathBuf::new();
         path.push(&*migrator.path);
-        path.push(&self.to_string());
+        path.push(self.to_string());
 
         let mut kind_path = path.clone();
         kind_path.push(K::name());

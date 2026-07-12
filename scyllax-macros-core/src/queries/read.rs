@@ -1,3 +1,5 @@
+#![allow(clippy::manual_unwrap_or_default, clippy::needless_continue)]
+
 use darling::{ast, FromDeriveInput, FromField};
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
