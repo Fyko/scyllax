@@ -76,6 +76,10 @@ println!("{user:#?}");
   - ensure the where constraints are the same type as the struct
 - [ ] Runtime Query Validation (structure matches schema)
 
+### Request coalescing
+
+Request coalescing attaches equivalent in-flight calls as followers to one leader database operation. The current runtime implementation is being modernized toward the vocabulary in [`CONTEXT.md`](CONTEXT.md) and the behavioral contract in [ADR 0001](docs/adr/0001-request-coalescing-contract.md).
+
 ### Todo
 - [x] Eject `anyhow`, more refined errors
 
